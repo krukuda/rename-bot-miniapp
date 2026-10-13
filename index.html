@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="light dark">
+<title>تنظیمات ربات تغییر نام</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-secondary-bg-color, #efeff4);
+    --card: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #ffffff));
+    --fg: var(--tg-theme-text-color, #111111);
+    --hint: var(--tg-theme-hint-color, #8a8a8e);
+    --accent: var(--tg-theme-button-color, #2481cc);
+    --accent-fg: var(--tg-theme-button-text-color, #ffffff);
+    --link: var(--tg-theme-link-color, #2481cc);
+    --sect-title: var(--tg-theme-section-header-text-color, var(--tg-theme-hint-color, #6d6d72));
+    --danger: var(--tg-theme-destructive-text-color, #e53935);
+    --line: color-mix(in srgb, var(--hint) 25%, transparent);
+    --soft: color-mix(in srgb, var(--accent) 12%, transparent);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: var(--tg-theme-secondary-bg-color, #0f0f10);
+      --card: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #1c1c1e));
+      --fg: var(--tg-theme-text-color, #f2f2f7);
+      --hint: var(--tg-theme-hint-color, #98989f);
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); }
+  body {
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Tahoma, "Noto Naskh Arabic", sans-serif;
+    padding: 12px 14px calc(110px + env(safe-area-inset-bottom, 0px));
+    max-width: 640px; margin: 0 auto;
+  }
+  header { padding: 8px 4px 4px; }
+  h1 { font-size: 22px; margin: 0 0 2px; }
+  header p { margin: 0; color: var(--hint); font-size: 14px; }
+  .demo-banner { display: none; margin: 10px 0 0; padding: 8px 12px; border-radius: 10px;
+    background: var(--soft); color: var(--link); font-size: 13px; }
+
+  h2 { font-size: 13px; font-weight: 600; color: var(--sect-title); margin: 22px 8px 6px; letter-spacing: .2px; }
+  .card { background: var(--card); border-radius: var(--radius); padding: 4px 14px; }
+  .card.pad { padding: 14px; }
+  .note { color: var(--hint); font-size: 13px; margin: 6px 8px 0; }
+  .note.warn { color: var(--danger); }
+
+  input[type=text], textarea {
+    width: 100%; font: inherit; color: var(--fg); background: color-mix(in srgb, var(--hint) 10%, transparent);
+    border: 1.5px solid transparent; border-radius: 10px; padding: 11px 12px; outline: none; min-height: 44px;
+  }
+  input[type=text]:focus { border-color: var(--accent); }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 15px; unicode-bidi: plaintext; text-align: start; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .scroll { flex-wrap: nowrap; overflow-x: auto; margin-inline: -14px; padding-inline: 14px; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .chip {
+    font: inherit; font-size: 14px; color: var(--link); background: var(--soft);
+    border: 0; border-radius: 999px; padding: 7px 13px; min-height: 36px; cursor: pointer; white-space: nowrap;
+  }
+  .chip.code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; direction: ltr; }
+  .chip:active { transform: scale(.96); }
+  .chip.on { background: var(--accent); color: var(--accent-fg); }
+
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row .t { flex: 1; min-width: 0; }
+  .row .t b { display: block; font-weight: 500; }
+  .row .t small { color: var(--hint); font-size: 13px; display: block; }
+
+  .switch { position: relative; width: 51px; height: 31px; flex: none; }
+  .switch input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 2; }
+  .switch i { position: absolute; inset: 0; border-radius: 999px; background: color-mix(in srgb, var(--hint) 40%, transparent); transition: background .2s; }
+  .switch i::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 27px; height: 27px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: transform .2s; }
+  .switch input:checked + i { background: var(--accent); }
+  .switch input:checked + i::after { transform: translateX(-20px); }
+  .switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; border-radius: 11px;
+    background: color-mix(in srgb, var(--hint) 16%, transparent); }
+  .seg label { position: relative; text-align: center; }
+  .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .seg span { display: block; padding: 8px 4px; font-size: 14px; border-radius: 9px; min-height: 36px; }
+  .seg input:checked + span { background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,.18); font-weight: 600; }
+  .seg input:focus-visible + span { outline: 2px solid var(--accent); }
+
+  .pv { padding: 10px 0; }
+  .pv + .pv { border-top: 1px solid var(--line); }
+  .pv .from { color: var(--hint); font-size: 12.5px; unicode-bidi: plaintext; text-align: start; overflow-wrap: anywhere; }
+  .pv .to { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14.5px; unicode-bidi: plaintext; text-align: start;
+    overflow-wrap: anywhere; margin-top: 2px; }
+  .pv .tag { font-size: 11.5px; color: var(--accent); }
+
+  .bar { position: fixed; inset-inline: 0; bottom: 0; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, var(--bg) 70%, transparent); display: none; }
+  .bar.show { display: block; }
+  .bar button { width: 100%; max-width: 640px; display: block; margin: 0 auto; font: inherit; font-weight: 600;
+    color: var(--accent-fg); background: var(--accent); border: 0; border-radius: 12px; padding: 14px; min-height: 50px; cursor: pointer; }
+  .bar button:disabled { opacity: .45; }
+  pre#out { direction: ltr; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12.5px; margin: 8px 0 0;
+    padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--hint) 12%, transparent); display: none; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚙️ تنظیمات ربات</h1>
+  <p>تغییرات رو ببین، بعد ذخیره کن؛ ربات همون لحظه اعمالشون می‌کنه.</p>
+  <div class="demo-banner" id="demo">پیش‌نمایش در مرورگر — داخل تلگرام دکمه‌ی ذخیره، داده رو مستقیم برای ربات می‌فرسته.</div>
+</header>
+
+<h2>الگوی نام فایل</h2>
+<div class="card pad">
+  <input id="pattern" type="text" class="mono" dir="auto" maxlength="200" autocomplete="off" spellcheck="false"
+         aria-label="الگوی نام فایل" placeholder="{name}{ext}">
+  <div class="chips scroll" id="presets" aria-label="الگوهای آماده"></div>
+  <div class="chips" id="tokens" aria-label="متغیرها"></div>
+</div>
+<div class="note" id="patNote"></div>
+
+<h2>پیش‌نمایش زنده</h2>
+<div class="card" id="preview" aria-live="polite"></div>
+
+<h2>رفتار ربات</h2>
+<div class="card">
+  <div class="row">
+    <div class="t"><b>🧹 پاک‌سازی هوشمند نام</b><small>حذف @آیدی و لینک، تبدیل «.» و «_» به فاصله</small></div>
+    <label class="switch"><input type="checkbox" id="clean" aria-label="پاک‌سازی هوشمند نام"><i></i></label>
+  </div>
+  <div class="row">
+    <div class="t"><b>🎞 تامبنیل خودکار از ویدیو</b><small>اگه فایل تامبنیل نداشت، از فریم ویدیو ساخته می‌شه</small></div>
+    <label class="switch"><input type="checkbox" id="autothumb" aria-label="تامبنیل خودکار"><i></i></label>
+  </div>
+</div>
+
+<h2>نوع ارسال</h2>
+<div class="card pad">
+  <div class="seg" id="mode" role="radiogroup" aria-label="نوع ارسال"></div>
+  <div class="note" style="margin:8px 0 0">«خودکار» یعنی همون نوعی که فایل اصلی داشت.</div>
+</div>
+
+<h2>کپشن</h2>
+<div class="card pad">
+  <div class="seg" id="caption" role="radiogroup" aria-label="کپشن"></div>
+  <div id="capBox" class="hide" style="margin-top:12px">
+    <input id="capTpl" type="text" dir="auto" class="mono" maxlength="500" autocomplete="off" placeholder="🎬 {filename} • {size}" aria-label="قالب کپشن">
+    <div class="chips" id="capTokens"></div>
+    <div class="note" id="capPv" style="margin:10px 0 0"></div>
+  </div>
+</div>
+<div class="note warn" id="err" role="alert"></div>
+<pre id="out"></pre>
+
+<div class="bar" id="bar"><button id="saveBtn" type="button">ذخیره و ارسال به ربات</button></div>
+
+<script>
+(() => {
+  "use strict";
+  // ---------- Telegram ----------
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const inTG = !!(tg && tg.platform && tg.platform !== "unknown");
+  const safe = (fn) => { try { return fn(); } catch (_) { /* قابلیت در نسخه‌ی قدیمی کلاینت نیست */ } };
+  const haptic = (kind, v) => safe(() => tg.HapticFeedback[kind](v));
+  if (tg) safe(() => { tg.ready(); tg.expand(); });
+
+  // ---------- پورت دقیق منطق نام‌گذاری ربات (bot.py) ----------
+  const enc = new TextEncoder();
+  const blen = (s) => enc.encode(s).length;
+  const BIDI = /[\u200e\u200f\u202a-\u202e\u2066-\u2069\u200b-\u200d\ufeff]/g;
+  const AD = /(https?:\/\/\S+|t\.me\/\S+|www\.\S+|@[\p{L}\p{N}_]+)/giu;
+  const TOKEN = /\{(name|ext|n|date|time|size|res|filename)(?::(\d{1,2}))?\}/g;
+
+  const EXT_RE = /\.[A-Za-z0-9]{1,10}$/;
+  const KNOWN_EXT = ["mkv","mp4","avi","mov","webm","wmv","flv","ts","m4v","mp3","flac","m4a","ogg","opus","wav","aac","zip","rar","7z","tar","gz","pdf","epub","srt","ass","vtt","txt","apk","exe","iso","jpg","jpeg","png","gif","webp","doc","docx","xls","xlsx","ppt","pptx"];
+  function splitExt(name) { const m = EXT_RE.exec(name); return (m && m.index > 0) ? [name.slice(0, m.index), m[0]] : [name, ""]; }
+  function hasExt(out, tpl, origExt) {
+    if (tpl.includes("{ext}")) return true;
+    const low = out.toLowerCase();
+    if (origExt && low.endsWith(origExt.toLowerCase())) return true;
+    if (KNOWN_EXT.some((e) => low.endsWith("." + e))) return true;
+    return /\.[a-z0-9]{2,5}$/.test(out);
+  }
+  function fitBytes(name, limit = 200) {
+    let [stem, ext] = splitExt(name);
+    while (stem && blen(stem + ext) > limit) stem = Array.from(stem).slice(0, -1).join("");
+    return (stem + ext) || "file";
+  }
+  function safeName(n) {
+    n = n.replace(BIDI, "").replace(/[\\/:*?"<>|\r\n\t]/g, "_").replace(/\s{2,}/g, " ").replace(/^[ .]+|[ .]+$/g, "");
+    return fitBytes(n);
+  }
+  function cleanStem(s) {
+    const r = s.replace(AD, " ").replace(/[._]+/g, " ").replace(/\s{2,}/g, " ");
+    return r.replace(/^[ \-–—\[\]()]+|[ \-–—\[\]()]+$/g, "") || r;
+  }
+  function render(tpl, ctx) {
+    return tpl.replace(TOKEN, (_, k, pad) => {
+      const v = ctx[k] === undefined ? "" : String(ctx[k]);
+      return (k === "n" && pad) ? v.padStart(+pad, "0") : v;
+    });
+  }
+  const pad2 = (x) => String(x).padStart(2, "0");
+  const now = new Date();
+  const DATE = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+  const TIME = `${pad2(now.getHours())}-${pad2(now.getMinutes())}`;
+  function buildName(tpl, smp, n, clean) {
+    const [stem, ext] = splitExt(smp.name);
+    const ctx = { name: clean ? cleanStem(stem) : stem, ext, n, date: DATE, time: TIME, size: smp.size, res: smp.res ? smp.res + "p" : "" };
+    let out = safeName(render(tpl, ctx));
+    if (ext && !hasExt(out, tpl, ext)) out = fitBytes(out, 200 - blen(ext)) + ext;
+    return out;
+  }
+  const escapeHtml = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+  // ---------- داده‌ها ----------
+  const DEFAULTS = { pattern: "{name}{ext}", clean: false, autothumb: true, mode: "auto", caption: "keep", caption_tpl: "" };
+  const SAMPLES = [
+    { icon: "🎬", name: "@Chan - My.Movie.2024.1080p.mkv", size: "1.4GB", res: 1080 },
+    { icon: "📺", name: "Show_Name.S01E03.720p.mp4", size: "420.0MB", res: 720 },
+    { icon: "🎵", name: "artist_-_track.name.mp3", size: "8.2MB", res: 0 },
+  ];
+  const PRESETS = [
+    ["ساده", "{name}{ext}"], ["فیلم", "{name} [{res}]{ext}"], ["سریال", "S01E{n:2} - {name}{ext}"],
+    ["با تاریخ", "{date} {name}{ext}"], ["شماره‌دار", "{n:2}. {name}{ext}"],
+  ];
+  const TOKENS = ["{name}", "{ext}", "{n}", "{n:3}", "{date}", "{time}", "{size}", "{res}"];
+  const MODES = [["auto", "خودکار"], ["document", "داکیومنت"], ["video", "ویدیو"], ["audio", "آهنگ"]];
+  const CAPS = [["keep", "اصلی"], ["none", "بدون کپشن"], ["custom", "سفارشی"]];
+
+  function loadInitial() {
+    try {
+      const raw = new URLSearchParams(location.search).get("s");
+      if (!raw) return { ...DEFAULTS };
+      const b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
+      const bin = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
+      const obj = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+      return { ...DEFAULTS, ...obj };
+    } catch (_) { return { ...DEFAULTS }; }
+  }
+  const initial = loadInitial();
+  const state = { ...initial };
+
+  // ---------- UI ----------
+  const $ = (id) => document.getElementById(id);
+  const el = { pattern: $("pattern"), clean: $("clean"), autothumb: $("autothumb"), capTpl: $("capTpl") };
+
+  function mk(tag, props, text) { const e = document.createElement(tag); Object.assign(e, props || {}); if (text) e.textContent = text; return e; }
+
+  PRESETS.forEach(([label, tpl]) => {
+    const b = mk("button", { type: "button", className: "chip" }, label);
+    b.addEventListener("click", () => { state.pattern = tpl; el.pattern.value = tpl; haptic("selectionChanged"); update(); });
+    $("presets").appendChild(b);
+  });
+  function tokenChips(container, input, key, list) {
+    list.forEach((t) => {
+      const b = mk("button", { type: "button", className: "chip code" }, t);
+      b.addEventListener("click", () => {
+        const s = input.selectionStart ?? input.value.length, e = input.selectionEnd ?? s;
+        input.value = input.value.slice(0, s) + t + input.value.slice(e);
+        const pos = s + t.length; input.setSelectionRange(pos, pos); input.focus();
+        state[key] = input.value; haptic("impactOccurred", "light"); update();
+      });
+      container.appendChild(b);
+    });
+  }
+  tokenChips($("tokens"), el.pattern, "pattern", TOKENS);
+  tokenChips($("capTokens"), el.capTpl, "caption_tpl", ["{filename}", "{name}", "{size}", "{res}", "{n}", "{date}"]);
+
+  function segmented(container, name, list, key) {
+    list.forEach(([val, label]) => {
+      const l = mk("label"); const i = mk("input", { type: "radio", name, value: val });
+      i.addEventListener("change", () => { state[key] = val; haptic("selectionChanged"); update(); });
+      l.append(i, mk("span", {}, label)); container.appendChild(l);
+    });
+  }
+  segmented($("mode"), "mode", MODES, "mode");
+  segmented($("caption"), "caption", CAPS, "caption");
+
+  el.pattern.addEventListener("input", () => { state.pattern = el.pattern.value; update(); });
+  el.capTpl.addEventListener("input", () => { state.caption_tpl = el.capTpl.value; update(); });
+  el.clean.addEventListener("change", () => { state.clean = el.clean.checked; haptic("impactOccurred", "light"); update(); });
+  el.autothumb.addEventListener("change", () => { state.autothumb = el.autothumb.checked; haptic("impactOccurred", "light"); update(); });
+
+  function paintInputs() {
+    el.pattern.value = state.pattern; el.clean.checked = !!state.clean; el.autothumb.checked = !!state.autothumb;
+    el.capTpl.value = state.caption_tpl || "";
+    document.querySelectorAll("#mode input").forEach((i) => (i.checked = i.value === state.mode));
+    document.querySelectorAll("#caption input").forEach((i) => (i.checked = i.value === state.caption));
+  }
+
+  // ---------- اعتبارسنجی و پیش‌نمایش ----------
+  function payload() {
+    const p = {
+      v: 1, pattern: state.pattern.trim(), clean: !!state.clean, autothumb: !!state.autothumb,
+      mode: state.mode, caption: state.caption, caption_tpl: (state.caption_tpl || "").trim(),
+    };
+    if (p.caption === "custom" && !p.caption_tpl) p.caption = "keep";
+    return p;
+  }
+  function validate(p) {
+    if (!p.pattern) return "الگوی نام نمی‌تونه خالی باشه.";
+    if (!/\{(name|n)(?::\d{1,2})?\}/.test(p.pattern)) return null; // فقط هشدار، خطا نیست
+    return null;
+  }
+  function update() {
+    const p = payload();
+    // هشدار الگو
+    const noUnique = p.pattern && !/\{(name|n)(?::\d{1,2})?\}/.test(p.pattern);
+    $("patNote").textContent = noUnique ? "⚠️ بدون {name} یا {n}، همه‌ی فایل‌ها یک اسم می‌گیرن." : "با ضربه روی متغیرها، داخل الگو درج می‌شن.";
+    $("patNote").className = "note" + (noUnique ? " warn" : "");
+    // پیش‌نمایش
+    const box = $("preview"); box.textContent = "";
+    SAMPLES.forEach((s, i) => {
+      const to = p.pattern ? buildName(p.pattern, s, i + 1, p.clean) : "—";
+      const d = mk("div", { className: "pv" });
+      d.append(mk("div", { className: "from" }, `${s.icon} ${s.name}`), mk("div", { className: "to" }, "← " + to));
+      box.appendChild(d);
+    });
+    // کپشن
+    $("capBox").classList.toggle("hide", state.caption !== "custom");
+    if (state.caption === "custom") {
+      const ex = buildName(p.pattern || "{name}{ext}", SAMPLES[0], 1, p.clean);
+      const [stem, ext] = splitExt(ex);
+      const cap = render(state.caption_tpl || "", { filename: ex, name: stem, ext, n: 1, date: DATE, time: TIME, size: SAMPLES[0].size, res: "1080p" });
+      const pv = $("capPv"); pv.textContent = "";
+      if (cap) pv.append("نمونه: ", mk("bdi", {}, cap)); else pv.textContent = "قالب رو بنویس تا نمونه‌اش رو ببینی.";
+    }
+    // اعتبار + اندازه
+    const err = validate(p) || (blen(JSON.stringify(p)) > 4000 ? "حجم تنظیمات زیاد است؛ الگو یا کپشن رو کوتاه‌تر کن." : "");
+    $("err").textContent = err || "";
+    const dirty = JSON.stringify(p) !== JSON.stringify(normalize(initial));
+    setSave(!err, dirty);
+  }
+  function normalize(o) {
+    const p = { v: 1, pattern: (o.pattern || "").trim(), clean: !!o.clean, autothumb: !!o.autothumb, mode: o.mode, caption: o.caption, caption_tpl: (o.caption_tpl || "").trim() };
+    if (p.caption === "custom" && !p.caption_tpl) p.caption = "keep";
+    return p;
+  }
+
+  // ---------- ذخیره ----------
+  function save() {
+    const p = payload(); const err = validate(p);
+    if (err) { haptic("notificationOccurred", "error"); return; }
+    const data = JSON.stringify(p);
+    if (blen(data) > 4096) { haptic("notificationOccurred", "error"); return; }
+    if (inTG) {
+      haptic("notificationOccurred", "success");
+      safe(() => tg.disableClosingConfirmation());
+      tg.sendData(data); // سرویس‌مسیج برای ربات می‌ره و مینی‌اپ بسته می‌شه
+    } else {
+      const out = $("out"); out.style.display = "block"; out.textContent = data;
+      out.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }
+  function setSave(valid, dirty) {
+    if (inTG && tg.MainButton) {
+      safe(() => { valid ? tg.MainButton.enable() : tg.MainButton.disable(); });
+      safe(() => { dirty ? tg.enableClosingConfirmation() : tg.disableClosingConfirmation(); });
+    } else {
+      $("saveBtn").disabled = !valid;
+    }
+  }
+
+  // ---------- راه‌اندازی ----------
+  paintInputs();
+  if (inTG) {
+    safe(() => {
+      tg.MainButton.setParams({ text: "ذخیره و ارسال به ربات", is_visible: true });
+      tg.MainButton.onClick(save);
+    });
+  } else {
+    $("demo").style.display = "block";
+    $("bar").classList.add("show");
+    $("saveBtn").addEventListener("click", save);
+  }
+  update();
+  // برای تست خودکار
+  window.__miniapp = { buildName, cleanStem, safeName, render, payload, state };
+})();
+</script>
+</body>
+</html>
