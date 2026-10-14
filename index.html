@@ -4,432 +4,516 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="color-scheme" content="light dark">
-<title>تنظیمات ربات تغییر نام</title>
+<meta name="rename-bot-panel" content="2">
+<title>پنل کنترل ربات</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  :root {
-    --bg: var(--tg-theme-secondary-bg-color, #efeff4);
-    --card: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #ffffff));
-    --fg: var(--tg-theme-text-color, #111111);
-    --hint: var(--tg-theme-hint-color, #8a8a8e);
-    --accent: var(--tg-theme-button-color, #2481cc);
-    --accent-fg: var(--tg-theme-button-text-color, #ffffff);
-    --link: var(--tg-theme-link-color, #2481cc);
-    --sect-title: var(--tg-theme-section-header-text-color, var(--tg-theme-hint-color, #6d6d72));
-    --danger: var(--tg-theme-destructive-text-color, #e53935);
-    --line: color-mix(in srgb, var(--hint) 25%, transparent);
-    --soft: color-mix(in srgb, var(--accent) 12%, transparent);
-    --radius: 14px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: var(--tg-theme-secondary-bg-color, #0f0f10);
-      --card: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #1c1c1e));
-      --fg: var(--tg-theme-text-color, #f2f2f7);
-      --hint: var(--tg-theme-hint-color, #98989f);
-    }
-  }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; background: var(--bg); color: var(--fg); }
-  body {
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Tahoma, "Noto Naskh Arabic", sans-serif;
-    padding: 12px 14px calc(110px + env(safe-area-inset-bottom, 0px));
-    max-width: 640px; margin: 0 auto;
-  }
-  header { padding: 8px 4px 4px; }
-  h1 { font-size: 22px; margin: 0 0 2px; }
-  header p { margin: 0; color: var(--hint); font-size: 14px; }
-  .demo-banner { display: none; margin: 10px 0 0; padding: 8px 12px; border-radius: 10px;
-    background: var(--soft); color: var(--link); font-size: 13px; }
-
-  h2 { font-size: 13px; font-weight: 600; color: var(--sect-title); margin: 22px 8px 6px; letter-spacing: .2px; }
-  .card { background: var(--card); border-radius: var(--radius); padding: 4px 14px; }
-  .card.pad { padding: 14px; }
-  .note { color: var(--hint); font-size: 13px; margin: 6px 8px 0; }
-  .note.warn { color: var(--danger); }
-
-  input[type=text], textarea {
-    width: 100%; font: inherit; color: var(--fg); background: color-mix(in srgb, var(--hint) 10%, transparent);
-    border: 1.5px solid transparent; border-radius: 10px; padding: 11px 12px; outline: none; min-height: 44px;
-  }
-  input[type=text]:focus { border-color: var(--accent); }
-  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 15px; unicode-bidi: plaintext; text-align: start; }
-
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .scroll { flex-wrap: nowrap; overflow-x: auto; margin-inline: -14px; padding-inline: 14px; scrollbar-width: none; }
-  .scroll::-webkit-scrollbar { display: none; }
-  .chip {
-    font: inherit; font-size: 14px; color: var(--link); background: var(--soft);
-    border: 0; border-radius: 999px; padding: 7px 13px; min-height: 36px; cursor: pointer; white-space: nowrap;
-  }
-  .chip.code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; direction: ltr; }
-  .chip:active { transform: scale(.96); }
-  .chip.on { background: var(--accent); color: var(--accent-fg); }
-
-  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; }
-  .row + .row { border-top: 1px solid var(--line); }
-  .row .t { flex: 1; min-width: 0; }
-  .row .t b { display: block; font-weight: 500; }
-  .row .t small { color: var(--hint); font-size: 13px; display: block; }
-
-  .switch { position: relative; width: 51px; height: 31px; flex: none; }
-  .switch input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 2; }
-  .switch i { position: absolute; inset: 0; border-radius: 999px; background: color-mix(in srgb, var(--hint) 40%, transparent); transition: background .2s; }
-  .switch i::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 27px; height: 27px; border-radius: 50%;
-    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: transform .2s; }
-  .switch input:checked + i { background: var(--accent); }
-  .switch input:checked + i::after { transform: translateX(-20px); }
-  .switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px; border-radius: 11px;
-    background: color-mix(in srgb, var(--hint) 16%, transparent); }
-  .seg label { position: relative; text-align: center; }
-  .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-  .seg span { display: block; padding: 8px 4px; font-size: 14px; border-radius: 9px; min-height: 36px; }
-  .seg input:checked + span { background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,.18); font-weight: 600; }
-  .seg input:focus-visible + span { outline: 2px solid var(--accent); }
-
-  .pv { padding: 10px 0; }
-  .pv + .pv { border-top: 1px solid var(--line); }
-  .pv .from { color: var(--hint); font-size: 12.5px; unicode-bidi: plaintext; text-align: start; overflow-wrap: anywhere; }
-  .pv .to { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14.5px; unicode-bidi: plaintext; text-align: start;
-    overflow-wrap: anywhere; margin-top: 2px; }
-  .pv .tag { font-size: 11.5px; color: var(--accent); }
-
-  .bar { position: fixed; inset-inline: 0; bottom: 0; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(to top, var(--bg) 70%, transparent); display: none; }
-  .bar.show { display: block; }
-  .bar button { width: 100%; max-width: 640px; display: block; margin: 0 auto; font: inherit; font-weight: 600;
-    color: var(--accent-fg); background: var(--accent); border: 0; border-radius: 12px; padding: 14px; min-height: 50px; cursor: pointer; }
-  .bar button:disabled { opacity: .45; }
-  pre#out { direction: ltr; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12.5px; margin: 8px 0 0;
-    padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--hint) 12%, transparent); display: none; }
-  .hide { display: none !important; }
-
-  /* ===== Glass theme (شیشه‌ای) ===== */
-  :root {
-    --glass: color-mix(in srgb, var(--card) 52%, transparent);
-    --glass-strong: color-mix(in srgb, var(--card) 70%, transparent);
-    --glass-brd: rgba(255,255,255,.65);
-    --glass-hi: rgba(255,255,255,.55);
-    --glass-shadow: 0 8px 30px rgba(40,60,120,.16);
-    --blur: blur(22px) saturate(1.6);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --glass-brd: rgba(255,255,255,.13); --glass-hi: rgba(255,255,255,.14); --glass-shadow: 0 8px 30px rgba(0,0,0,.45); }
-  }
-  html { background: var(--bg); }
-  body { background: transparent; }
-  body::before {
-    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background:
-      radial-gradient(55% 38% at 12% 8%,  color-mix(in srgb, var(--accent) 50%, transparent), transparent 70%),
-      radial-gradient(48% 36% at 92% 28%, rgba(179,107,255,.34), transparent 70%),
-      radial-gradient(60% 45% at 40% 100%, rgba(46,230,200,.28), transparent 70%);
-  }
-  .card, .chip, .seg, input[type=text], textarea, pre#out, .demo-banner {
-    background: var(--glass);
-    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
-    border: 1px solid var(--glass-brd);
-    box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi);
-  }
-  .card { border-radius: 20px; }
-  input[type=text], textarea { border-radius: 14px; }
-  input[type=text]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
-  .chip { box-shadow: inset 0 1px 0 var(--glass-hi); }
-  .chip.on { background: color-mix(in srgb, var(--accent) 88%, transparent); border-color: transparent;
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent), inset 0 1px 0 rgba(255,255,255,.35); }
-  .seg { border-radius: 14px; box-shadow: inset 0 1px 3px rgba(0,0,0,.08); }
-  .seg input:checked + span { background: var(--glass-strong); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
-    border: 1px solid var(--glass-brd); box-shadow: 0 2px 8px rgba(0,0,0,.14), inset 0 1px 0 var(--glass-hi); }
-  .switch i { box-shadow: inset 0 1px 3px rgba(0,0,0,.18); }
-  .row + .row, .pv + .pv { border-top-color: color-mix(in srgb, var(--fg) 10%, transparent); }
-  .bar { background: linear-gradient(to top, color-mix(in srgb, var(--bg) 75%, transparent) 55%, transparent); }
-  .bar button {
-    border-radius: 16px; border: 1px solid rgba(255,255,255,.35);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 92%, #fff), color-mix(in srgb, var(--accent) 78%, #000));
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.45);
-  }
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .card, .chip, .seg, input[type=text], textarea { background: color-mix(in srgb, var(--card) 92%, transparent); }
-  }
+:root{
+  --bg:var(--tg-theme-bg-color,#f5f6fa);
+  --card:var(--tg-theme-secondary-bg-color,#fff);
+  --tx:var(--tg-theme-text-color,#14161a);
+  --hint:var(--tg-theme-hint-color,#7b8190);
+  --ac:var(--tg-theme-button-color,#3b82f6);
+  --act:var(--tg-theme-button-text-color,#fff);
+  --lnk:var(--tg-theme-link-color,#3b82f6);
+  --bad:var(--tg-theme-destructive-text-color,#e5484d);
+  --ok:#22a06b; --warn:#f59e0b;
+  --line:color-mix(in srgb,var(--hint) 22%,transparent);
+  --soft:color-mix(in srgb,var(--ac) 12%,transparent);
+  --r:18px;
+}
+@media (prefers-color-scheme:dark){:root{--bg:var(--tg-theme-bg-color,#0e1116);--card:var(--tg-theme-secondary-bg-color,#171b22);--tx:var(--tg-theme-text-color,#eef0f4)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx)}
+body{font:15px/1.55 Vazirmatn,system-ui,-apple-system,"Segoe UI",Tahoma,"Noto Naskh Arabic",sans-serif;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top h1{font-size:17px;margin:0;flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px;border-radius:99px;background:var(--soft);color:var(--hint)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.chip.live .dot{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 25%,transparent)}
+.chip.off .dot{background:var(--bad)}
+main{max-width:680px;margin:0 auto;padding:14px 14px 0}
+.page{display:none;animation:in .18s ease-out}.page.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.card h2{font-size:14px;margin:0 0 10px;color:var(--hint);font-weight:600;display:flex;align-items:center;gap:6px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{background:var(--soft);border-radius:14px;padding:10px 12px}
+.stat b{display:block;font-size:19px}.stat span{font-size:12px;color:var(--hint)}
+.banner{display:none;margin:0 0 12px;padding:10px 14px;border-radius:14px;background:color-mix(in srgb,var(--warn) 18%,transparent);font-size:13px}
+.banner.on{display:block}
+button{font:inherit;border:0;border-radius:12px;padding:10px 14px;background:var(--soft);color:var(--lnk);cursor:pointer;min-height:42px}
+button:active{transform:scale(.97)}
+button.pri{background:var(--ac);color:var(--act)}
+button.bad{color:var(--bad)}
+button.sm{padding:6px 10px;min-height:34px;font-size:13px}
+button:disabled{opacity:.45}
+.row{display:flex;gap:8px;align-items:center}.row.wrap{flex-wrap:wrap}.grow{flex:1}
+input[type=text],textarea,select{width:100%;font:inherit;color:var(--tx);background:color-mix(in srgb,var(--hint) 10%,transparent);border:1.5px solid transparent;border-radius:12px;padding:10px 12px;outline:none;min-height:42px}
+input:focus,textarea:focus,select:focus{border-color:var(--ac)}
+textarea{resize:vertical;min-height:84px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;direction:ltr;text-align:left;unicode-bidi:plaintext}
+.seg{display:flex;background:color-mix(in srgb,var(--hint) 12%,transparent);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;background:transparent;color:var(--tx);padding:7px 4px;min-height:36px;font-size:13px}
+.seg button.on{background:var(--ac);color:var(--act)}
+.tok{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tok button{font-size:12px;padding:4px 9px;min-height:30px}
+.sw{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.sw+.sw{border-top:1px solid var(--line)}
+.tg{position:relative;width:46px;height:28px;border-radius:99px;background:color-mix(in srgb,var(--hint) 35%,transparent);flex:none;transition:.15s;padding:0;min-height:0}
+.tg::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}
+.tg.on{background:var(--ok)}.tg.on::after{inset-inline-start:21px}
+.prev{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--soft);font-size:14px;word-break:break-all}
+.prev small{display:block;color:var(--hint);font-size:11px;margin-bottom:2px}
+.bar{height:10px;border-radius:99px;background:color-mix(in srgb,var(--hint) 20%,transparent);overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 60%,#8b5cf6));transition:width .6s}
+.item{display:flex;align-items:center;gap:10px;padding:9px 0}
+.item+.item{border-top:1px solid var(--line)}
+.item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:start;unicode-bidi:plaintext}
+.item .sub{font-size:12px;color:var(--hint)}
+.empty{text-align:center;color:var(--hint);padding:18px 6px;font-size:14px}
+.chat{height:calc(100vh - 290px);min-height:220px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px}
+.b{max-width:86%;padding:9px 12px;border-radius:16px;white-space:pre-wrap;word-break:break-word;line-height:1.6}
+.b.me{align-self:flex-start;background:var(--ac);color:var(--act);border-end-start-radius:4px}
+.b.bot{align-self:flex-end;background:var(--soft);border-end-end-radius:4px}
+.b.err{background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.b small{display:block;opacity:.6;font-size:11px;margin-top:3px}
+.nav{position:fixed;bottom:0;inset-inline:0;z-index:30;display:flex;justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line)}
+.nav button{background:transparent;color:var(--hint);display:flex;flex-direction:column;align-items:center;gap:0;font-size:11px;padding:4px 8px;min-height:50px;flex:1;position:relative}
+.nav button span{font-size:20px;line-height:1.3}
+.nav button.on{color:var(--ac)}
+.nav button .n{position:absolute;top:2px;inset-inline-end:22%;background:var(--bad);color:#fff;border-radius:99px;font-size:10px;padding:0 5px;min-width:16px}
+#toast{position:fixed;bottom:calc(86px + env(safe-area-inset-bottom,0px));inset-inline:16px;display:flex;flex-direction:column;gap:6px;z-index:50;pointer-events:none;align-items:center}
+.t{background:#222;color:#fff;padding:9px 14px;border-radius:12px;font-size:14px;animation:in .15s;max-width:100%}
+.t.bad{background:var(--bad)}
+.code{font:700 26px/1.2 ui-monospace,Menlo,monospace;letter-spacing:4px;direction:ltr;text-align:center;padding:12px;background:var(--soft);border-radius:14px;margin:8px 0}
+.hint{color:var(--hint);font-size:12.5px;margin-top:8px}
+details summary{cursor:pointer;color:var(--hint);font-size:13px}
 </style>
 </head>
 <body>
-<header>
-  <h1>⚙️ تنظیمات ربات</h1>
-  <p>تغییرات رو ببین، بعد ذخیره کن؛ ربات همون لحظه اعمالشون می‌کنه.</p>
-  <div class="demo-banner" id="demo">پیش‌نمایش در مرورگر — داخل تلگرام دکمه‌ی ذخیره، داده رو مستقیم برای ربات می‌فرسته.</div>
-</header>
+<div class="top"><h1>🎛 پنل ربات</h1><span id="chip" class="chip"><i class="dot"></i><span id="chipt">در حال اتصال…</span></span></div>
+<main>
+  <div id="banner" class="banner"></div>
 
-<h2>الگوی نام فایل</h2>
-<div class="card pad">
-  <input id="pattern" type="text" class="mono" dir="auto" maxlength="200" autocomplete="off" spellcheck="false"
-         aria-label="الگوی نام فایل" placeholder="{name}{ext}">
-  <div class="chips scroll" id="presets" aria-label="الگوهای آماده"></div>
-  <div class="chips" id="tokens" aria-label="متغیرها"></div>
-</div>
-<div class="note" id="patNote"></div>
+  <!-- ============ خانه ============ -->
+  <section id="p-home" class="page on">
+    <div class="card" id="jobcard" style="display:none"></div>
+    <div class="card"><h2>📊 وضعیت</h2><div class="grid" id="stats"></div></div>
+    <div class="card">
+      <h2>⬇️ دانلود از لینک و ارسال در تلگرام</h2>
+      <textarea id="urls" class="mono" placeholder="هر خط یک لینک (مستقیم یا Google Drive)" rows="3"></textarea>
+      <div class="row" style="margin-top:8px"><button class="pri grow" id="goUrl">دانلود و ارسال</button><button id="pasteUrl">📋 چسباندن</button></div>
+      <div class="hint">فایل با تنظیمات تو (الگوی نام، تامبنیل، کپشن) توی همین چت با ربات فرستاده می‌شه. بزرگ‌تر از ۲ گیگ خودکار تقسیم می‌شه.</div>
+    </div>
+    <div class="card" id="acctcard" style="display:none"></div>
+    <div class="card" id="grpcard" style="display:none"></div>
+  </section>
 
-<h2>پیش‌نمایش زنده</h2>
-<div class="card" id="preview" aria-live="polite"></div>
+  <!-- ============ صف ============ -->
+  <section id="p-queue" class="page">
+    <div class="card"><h2>📥 فایل‌های توی صف</h2><div id="qlist"></div></div>
+    <div class="card" id="qopts">
+      <h2>🎚 گزینه‌های این اجرا</h2>
+      <label class="hint">الگوی نام (فقط برای این بار؛ خالی = همون تنظیمات)</label>
+      <input type="text" id="qpat" class="mono" placeholder="{name} [{res}]{ext}">
+      <label class="hint">نوع ارسال</label>
+      <div class="seg" id="qmode"></div>
+      <label class="hint">تعداد فریم برای «شیت فریم‌ها»</label>
+      <div class="seg" id="qn"></div>
+    </div>
+    <div class="card">
+      <div class="row wrap">
+        <button class="pri grow" id="qSend">✏️ تغییر نام و ارسال</button>
+        <button class="grow" id="qLink">🔗 لینک Drive</button>
+        <button class="grow" id="qShots">📸 شیت فریم‌ها</button>
+      </div>
+      <div class="row" style="margin-top:8px"><button class="bad sm" id="qClear">🗑 خالی‌کردن صف</button></div>
+      <div class="hint">فایل‌ها رو توی چت برای ربات بفرست (یا فوروارد کن)؛ اینجا نشون داده می‌شن. برای چند فایل، اول <code>/batch</code> بزن.</div>
+    </div>
+  </section>
 
-<h2>رفتار ربات</h2>
-<div class="card">
-  <div class="row">
-    <div class="t"><b>🧹 پاک‌سازی هوشمند نام</b><small>حذف @آیدی و لینک، تبدیل «.» و «_» به فاصله</small></div>
-    <label class="switch"><input type="checkbox" id="clean" aria-label="پاک‌سازی هوشمند نام"><i></i></label>
-  </div>
-  <div class="row">
-    <div class="t"><b>🎞 تامبنیل خودکار از ویدیو</b><small>اگه فایل تامبنیل نداشت، از فریم ویدیو ساخته می‌شه</small></div>
-    <label class="switch"><input type="checkbox" id="autothumb" aria-label="تامبنیل خودکار"><i></i></label>
-  </div>
-</div>
+  <!-- ============ تنظیمات ============ -->
+  <section id="p-set" class="page">
+    <div class="card">
+      <h2>🧩 الگوی نام</h2>
+      <input type="text" id="pat" class="mono" spellcheck="false">
+      <div class="tok" id="toks"></div>
+      <div class="prev"><small>پیش‌نمایش (روی نام نمونه‌ی زیر)</small><span id="prevn" class="mono"></span></div>
+      <input type="text" id="sample" class="mono" style="margin-top:8px" value="Movie.Name.2023.1080p.WEB-DL.x265.mkv">
+    </div>
+    <div class="card">
+      <h2>⚙️ رفتار</h2>
+      <div class="sw"><span>پاک‌سازی هوشمند نام<br><small class="hint">آگهی/آیدی/لینک حذف، نقطه و _ → فاصله</small></span><button class="tg" id="clean"></button></div>
+      <div class="sw"><span>تامبنیل خودکار از فریم ویدیو</span><button class="tg" id="autothumb"></button></div>
+      <h2 style="margin-top:12px">نوع ارسال</h2>
+      <div class="seg" id="mode"></div>
+    </div>
+    <div class="card">
+      <h2>📝 کپشن</h2>
+      <div class="seg" id="cap"></div>
+      <textarea id="capt" style="margin-top:8px;display:none" placeholder="قالب کپشن؛ متغیرها مجازه، مثلاً {filename} • {size}"></textarea>
+      <div class="prev" id="capprev" style="display:none"><small>پیش‌نمایش کپشن</small><span></span></div>
+    </div>
+    <div class="card" id="thumbcard"></div>
+    <div class="row"><button class="pri grow" id="save">💾 ذخیره</button></div>
+    <div class="hint" id="savehint"></div>
+  </section>
 
-<h2>نوع ارسال</h2>
-<div class="card pad">
-  <div class="seg" id="mode" role="radiogroup" aria-label="نوع ارسال"></div>
-  <div class="note" style="margin:8px 0 0">«خودکار» یعنی همون نوعی که فایل اصلی داشت.</div>
-</div>
+  <!-- ============ لینک‌ها ============ -->
+  <section id="p-links" class="page">
+    <div class="card"><h2>🔗 لینک‌های فعال (Drive)</h2><div id="llist"></div>
+      <div class="row" style="margin-top:8px"><button class="bad sm" id="lAll">🗑 حذف همه</button></div>
+      <div class="hint">لینک‌ها بعد از مدتی یا با توقف ربات خودکار از Drive پاک می‌شن. لینک عمومی‌ه: هر کسی که داشته باشه می‌تونه دانلود کنه.</div>
+    </div>
+  </section>
 
-<h2>کپشن</h2>
-<div class="card pad">
-  <div class="seg" id="caption" role="radiogroup" aria-label="کپشن"></div>
-  <div id="capBox" class="hide" style="margin-top:12px">
-    <input id="capTpl" type="text" dir="auto" class="mono" maxlength="500" autocomplete="off" placeholder="🎬 {filename} • {size}" aria-label="قالب کپشن">
-    <div class="chips" id="capTokens"></div>
-    <div class="note" id="capPv" style="margin:10px 0 0"></div>
-  </div>
-</div>
-<div class="note warn" id="err" role="alert"></div>
-<pre id="out"></pre>
-
-<div class="bar" id="bar"><button id="saveBtn" type="button">ذخیره و ارسال به ربات</button></div>
+  <!-- ============ چت ============ -->
+  <section id="p-chat" class="page">
+    <div class="card">
+      <div class="row"><span id="chatst" class="hint grow"></span><button class="sm" id="cTog"></button><button class="sm" id="cRst">🧹</button></div>
+      <div id="chatlog" class="chat"></div>
+      <div class="row" style="margin-top:8px"><input type="text" id="cin" placeholder="هر سؤالی از ربات یا هر موضوعی…"><button class="pri" id="cSend">ارسال</button></div>
+    </div>
+    <div class="card" id="provcard"><h2>🤖 منبع‌های هوش مصنوعی</h2><div id="provs" class="hint"></div><div id="provadm"></div></div>
+  </section>
+</main>
+<nav class="nav" id="nav">
+  <button data-p="home" class="on"><span>🏠</span>خانه</button>
+  <button data-p="queue"><span>📥</span>صف<i class="n" id="qn_b" style="display:none"></i></button>
+  <button data-p="set"><span>⚙️</span>تنظیمات</button>
+  <button data-p="links"><span>🔗</span>لینک‌ها</button>
+  <button data-p="chat"><span>💬</span>چت</button>
+</nav>
+<div id="toast"></div>
 
 <script>
-(() => {
-  "use strict";
-  // ---------- Telegram ----------
-  const tg = window.Telegram && window.Telegram.WebApp;
-  const inTG = !!(tg && tg.platform && tg.platform !== "unknown");
-  const safe = (fn) => { try { return fn(); } catch (_) { /* قابلیت در نسخه‌ی قدیمی کلاینت نیست */ } };
-  const haptic = (kind, v) => safe(() => tg.HapticFeedback[kind](v));
-  if (tg) safe(() => { tg.ready(); tg.expand(); });
+'use strict';
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {} }
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const haptic = (t = 'light') => { try { tg && tg.HapticFeedback.impactOccurred(t); } catch (e) {} };
+const LTR = x => '\u2066' + x + '\u2069';  // جداسازی عدد/واحد لاتین از متن راست‌به‌چپ
+const fmtSize = n => { n = +n || 0; const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0; while (n >= 1024 && i < 4) { n /= 1024; i++; } return LTR(n.toFixed(i ? 1 : 0) + ' ' + u[i]); };
+const fmtDur = s => { s = Math.max(0, Math.round(s)); const h = (s / 3600) | 0, m = ((s % 3600) / 60) | 0, x = s % 60; return LTR(h ? `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}`); };
+const fmtLeft = s => { s = Math.max(0, s | 0); const h = (s / 3600) | 0, m = ((s % 3600) / 60) | 0; return h ? `${h} ساعت و ${m} دقیقه` : `${m} دقیقه`; };
+function toast(msg, bad) {
+  const d = document.createElement('div'); d.className = 't' + (bad ? ' bad' : ''); d.textContent = msg;
+  $('#toast').appendChild(d); setTimeout(() => d.remove(), 3200);
+  try { tg && tg.HapticFeedback.notificationOccurred(bad ? 'error' : 'success'); } catch (e) {}
+}
 
-  // ---------- پورت دقیق منطق نام‌گذاری ربات (bot.py) ----------
-  const enc = new TextEncoder();
-  const blen = (s) => enc.encode(s).length;
-  const BIDI = /[\u200e\u200f\u202a-\u202e\u2066-\u2069\u200b-\u200d\ufeff]/g;
-  const AD = /(https?:\/\/\S+|t\.me\/\S+|www\.\S+|@[\p{L}\p{N}_]+)/giu;
-  const TOKEN = /\{(name|ext|n|date|time|size|res|filename)(?::(\d{1,2}))?\}/g;
+/* ---------------- رمزنگاری (AES-256-GCM؛ هم‌فرمت با ربات) ---------------- */
+const b64uToBytes = s => { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const b = atob(s); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+const bytesToB64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+const enc = new TextEncoder(), dec = new TextDecoder();
+async function gz(u8, mode) {
+  const st = new Blob([u8]).stream().pipeThrough(mode === 'c' ? new CompressionStream('gzip') : new DecompressionStream('gzip'));
+  return new Uint8Array(await new Response(st).arrayBuffer());
+}
+let KEY = null;
+async function sealFrame(obj, topic) {
+  let raw = enc.encode(JSON.stringify(obj)), flag = 0;
+  if (raw.length > 200 && typeof CompressionStream !== 'undefined') { const z = await gz(raw, 'c'); if (z.length < raw.length) { raw = z; flag = 1; } }
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(topic) }, KEY, raw));
+  const out = new Uint8Array(13 + ct.length); out[0] = flag; out.set(iv, 1); out.set(ct, 13);
+  return bytesToB64(out);
+}
+async function openFrame(b64, topic) {
+  const buf = Uint8Array.from(atob(String(b64).trim()), c => c.charCodeAt(0));
+  let raw = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: buf.slice(1, 13), additionalData: enc.encode(topic) }, KEY, buf.slice(13)));
+  if (buf[0] === 1) raw = await gz(raw, 'd');
+  return JSON.parse(dec.decode(raw));
+}
 
-  const EXT_RE = /\.[A-Za-z0-9]{1,10}$/;
-  const KNOWN_EXT = ["mkv","mp4","avi","mov","webm","wmv","flv","ts","m4v","mp3","flac","m4a","ogg","opus","wav","aac","zip","rar","7z","tar","gz","pdf","epub","srt","ass","vtt","txt","apk","exe","iso","jpg","jpeg","png","gif","webp","doc","docx","xls","xlsx","ppt","pptx"];
-  function splitExt(name) { const m = EXT_RE.exec(name); return (m && m.index > 0) ? [name.slice(0, m.index), m[0]] : [name, ""]; }
-  function hasExt(out, tpl, origExt) {
-    if (tpl.includes("{ext}")) return true;
-    const low = out.toLowerCase();
-    if (origExt && low.endsWith(origExt.toLowerCase())) return true;
-    if (KNOWN_EXT.some((e) => low.endsWith("." + e))) return true;
-    return /\.[a-z0-9]{2,5}$/.test(out);
-  }
-  function fitBytes(name, limit = 200) {
-    let [stem, ext] = splitExt(name);
-    while (stem && blen(stem + ext) > limit) stem = Array.from(stem).slice(0, -1).join("");
-    return (stem + ext) || "file";
-  }
-  function safeName(n) {
-    n = n.replace(BIDI, "").replace(/[\\/:*?"<>|\r\n\t]/g, "_").replace(/\s{2,}/g, " ").replace(/^[ .]+|[ .]+$/g, "");
-    return fitBytes(n);
-  }
-  function cleanStem(s) {
-    const r = s.replace(AD, " ").replace(/[._]+/g, " ").replace(/\s{2,}/g, " ");
-    return r.replace(/^[ \-–—\[\]()]+|[ \-–—\[\]()]+$/g, "") || r;
-  }
-  function render(tpl, ctx) {
-    return tpl.replace(TOKEN, (_, k, pad) => {
-      const v = ctx[k] === undefined ? "" : String(ctx[k]);
-      return (k === "n" && pad) ? v.padStart(+pad, "0") : v;
-    });
-  }
-  const pad2 = (x) => String(x).padStart(2, "0");
-  const now = new Date();
-  const DATE = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
-  const TIME = `${pad2(now.getHours())}-${pad2(now.getMinutes())}`;
-  function buildName(tpl, smp, n, clean) {
-    const [stem, ext] = splitExt(smp.name);
-    const ctx = { name: clean ? cleanStem(stem) : stem, ext, n, date: DATE, time: TIME, size: smp.size, res: smp.res ? smp.res + "p" : "" };
-    let out = safeName(render(tpl, ctx));
-    if (ext && !hasExt(out, tpl, ext)) out = fitBytes(out, 200 - blen(ext)) + ext;
-    return out;
-  }
-  const escapeHtml = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+/* ---------------- ارتباط با ربات (رله) ---------------- */
+const Q = new URLSearchParams(location.search);
+const TID = Q.get('t'), KEYB = Q.get('k'), RELAY = (Q.get('r') || 'https://ntfy.sh').replace(/\/+$/, '');
+const UP = `rnb${TID}u`, DN = `rnb${TID}d`;
+let LEGACY = null; try { LEGACY = JSON.parse(dec.decode(b64uToBytes(Q.get('s')))); } catch (e) {}
+let S = null, conn = 'connecting', lastRx = 0, nonce = 0, es = null, helloTries = 0;
+const pending = new Map();
 
-  // ---------- داده‌ها ----------
-  const DEFAULTS = { pattern: "{name}{ext}", clean: false, autothumb: true, mode: "auto", caption: "keep", caption_tpl: "" };
-  const SAMPLES = [
-    { icon: "🎬", name: "@Chan - My.Movie.2024.1080p.mkv", size: "1.4GB", res: 1080 },
-    { icon: "📺", name: "Show_Name.S01E03.720p.mp4", size: "420.0MB", res: 720 },
-    { icon: "🎵", name: "artist_-_track.name.mp3", size: "8.2MB", res: 0 },
-  ];
-  const PRESETS = [
-    ["ساده", "{name}{ext}"], ["فیلم", "{name} [{res}]{ext}"], ["سریال", "S01E{n:2} - {name}{ext}"],
-    ["با تاریخ", "{date} {name}{ext}"], ["شماره‌دار", "{n:2}. {name}{ext}"],
-  ];
-  const TOKENS = ["{name}", "{ext}", "{n}", "{n:3}", "{date}", "{time}", "{size}", "{res}"];
-  const MODES = [["auto", "خودکار"], ["document", "داکیومنت"], ["video", "ویدیو"], ["audio", "آهنگ"]];
-  const CAPS = [["keep", "اصلی"], ["none", "بدون کپشن"], ["custom", "سفارشی"]];
-
-  function loadInitial() {
-    try {
-      const raw = new URLSearchParams(location.search).get("s");
-      if (!raw) return { ...DEFAULTS };
-      const b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
-      const bin = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
-      const obj = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
-      return { ...DEFAULTS, ...obj };
-    } catch (_) { return { ...DEFAULTS }; }
-  }
-  const initial = loadInitial();
-  const state = { ...initial };
-
-  // ---------- UI ----------
-  const $ = (id) => document.getElementById(id);
-  const el = { pattern: $("pattern"), clean: $("clean"), autothumb: $("autothumb"), capTpl: $("capTpl") };
-
-  function mk(tag, props, text) { const e = document.createElement(tag); Object.assign(e, props || {}); if (text) e.textContent = text; return e; }
-
-  PRESETS.forEach(([label, tpl]) => {
-    const b = mk("button", { type: "button", className: "chip" }, label);
-    b.addEventListener("click", () => { state.pattern = tpl; el.pattern.value = tpl; haptic("selectionChanged"); update(); });
-    $("presets").appendChild(b);
+function setConn(c) {
+  conn = c;
+  const el = $('#chip'); el.className = 'chip ' + (c === 'live' ? 'live' : c === 'offline' ? 'off' : '');
+  $('#chipt').textContent = c === 'live' ? 'زنده' : c === 'offline' ? 'آفلاین' : 'در حال اتصال…';
+  const b = $('#banner');
+  if (c === 'offline') { b.className = 'banner on'; b.innerHTML = 'ارتباط زنده با ربات برقرار نیست (ربات خاموشه یا رله در دسترس نیست). فقط ذخیره‌ی تنظیمات به روش قدیمی ممکنه. <button class="sm" onclick="retry()">تلاش مجدد</button>'; }
+  else b.className = 'banner';
+}
+async function send(obj) {
+  nonce = Math.max(nonce + 1, Date.now() * 1000);
+  obj.n = nonce; obj.i = tg ? tg.initData : '';
+  const r = await fetch(`${RELAY}/${UP}`, { method: 'POST', body: await sealFrame(obj, UP) });
+  if (!r.ok) throw new Error('رله ' + r.status);
+}
+function call(c, d, timeout = 25000) {
+  return new Promise((res, rej) => {
+    const r = Math.random().toString(36).slice(2, 8);
+    const t = setTimeout(() => { pending.delete(r); rej(new Error('ربات جواب نداد')); }, timeout);
+    pending.set(r, { res, rej, t });
+    send({ c, d: d || {}, r }).catch(e => { clearTimeout(t); pending.delete(r); rej(e); });
   });
-  function tokenChips(container, input, key, list) {
-    list.forEach((t) => {
-      const b = mk("button", { type: "button", className: "chip code" }, t);
-      b.addEventListener("click", () => {
-        const s = input.selectionStart ?? input.value.length, e = input.selectionEnd ?? s;
-        input.value = input.value.slice(0, s) + t + input.value.slice(e);
-        const pos = s + t.length; input.setSelectionRange(pos, pos); input.focus();
-        state[key] = input.value; haptic("impactOccurred", "light"); update();
-      });
-      container.appendChild(b);
-    });
-  }
-  tokenChips($("tokens"), el.pattern, "pattern", TOKENS);
-  tokenChips($("capTokens"), el.capTpl, "caption_tpl", ["{filename}", "{name}", "{size}", "{res}", "{n}", "{date}"]);
+}
+async function act(c, d, okMsg) {
+  try { const r = await call(c, d); if (okMsg) toast(okMsg); haptic(); return r || {}; }
+  catch (e) { toast(e.message || 'خطا', true); return null; }
+}
+function onMsg(o) {
+  lastRx = Date.now();
+  if (o.t === 'state') { S = o.d; setConn('live'); helloTries = 0; renderAll(); }
+  else if (o.t === 'ack') { const p = pending.get(o.r); if (p) { clearTimeout(p.t); pending.delete(o.r); o.ok ? p.res(o.d || {}) : p.rej(new Error(o.e || 'خطا')); } }
+  else if (o.t === 'chat') { bubble('bot', o.text, o.err, o.via); chatBusy(false); }
+  else if (o.t === 'pong') { if (conn !== 'live') setConn('live'); }
+}
+function openStream() {
+  if (es) es.close();
+  es = new EventSource(`${RELAY}/${DN}/sse`);
+  es.addEventListener('open', () => hello());
+  es.onmessage = async ev => {
+    try { const m = JSON.parse(ev.data); if (m.event && m.event !== 'message') return; onMsg(await openFrame(m.message, DN)); } catch (e) {}
+  };
+}
+function hello() { send({ c: 'hello', r: 'h' + Date.now() }).catch(() => {}); }
+function retry() { setConn('connecting'); helloTries = 0; openStream(); }
+window.retry = retry;
+async function boot() {
+  if (!TID || !KEYB) { setConn('offline'); $('#banner').innerHTML = 'لینک پنل ناقصه؛ توی ربات دوباره /app بزن و از همون دکمه باز کن.'; renderAll(); return; }
+  try { KEY = await crypto.subtle.importKey('raw', b64uToBytes(KEYB), 'AES-GCM', false, ['encrypt', 'decrypt']); }
+  catch (e) { setConn('offline'); return; }
+  openStream();
+  setInterval(() => {
+    if (document.hidden) return;
+    if (!S && helloTries < 6) { helloTries++; hello(); }
+    if (!S && helloTries >= 4 && conn !== 'offline' && Date.now() - lastRx > 15000) setConn('offline');
+    if (S) { send({ c: 'ping' }).catch(() => {}); if (Date.now() - lastRx > 75000 && conn === 'live') setConn('offline'); }
+  }, 20000);
+  setTimeout(() => { if (!S) { hello(); } }, 3000);
+  setTimeout(() => { if (!S && conn !== 'live') setConn('offline'); }, 14000);
+}
 
-  function segmented(container, name, list, key) {
-    list.forEach(([val, label]) => {
-      const l = mk("label"); const i = mk("input", { type: "radio", name, value: val });
-      i.addEventListener("change", () => { state[key] = val; haptic("selectionChanged"); update(); });
-      l.append(i, mk("span", {}, label)); container.appendChild(l);
-    });
-  }
-  segmented($("mode"), "mode", MODES, "mode");
-  segmented($("caption"), "caption", CAPS, "caption");
+/* ---------------- نام‌گذاری (پیش‌نمایش هم‌قاعده با ربات) ---------------- */
+const TOKRE = /\{(name|ext|n|date|time|size|res|filename)(?::(\d{1,2}))?\}/g;
+const renderTpl = (tpl, ctx) => tpl.replace(TOKRE, (m, k, p) => (k === 'n' && p) ? String(ctx.n).padStart(+p, '0') : String(ctx[k] ?? ''));
+const splitExt = n => { const m = /\.[A-Za-z0-9]{1,10}$/.exec(n); return m && m.index > 0 ? [n.slice(0, m.index), m[0]] : [n, '']; };
+const cleanStem = s => { s = s.replace(/(https?:\/\/\S+|t\.me\/\S+|www\.\S+|@\w+)/gi, ' ').replace(/[._]+/g, ' ').replace(/\s{2,}/g, ' ').trim(); return s.replace(/^[\s\-–—\[\]()]+|[\s\-–—\[\]()]+$/g, '') || s; };
+function previewName(tpl, clean, sample) {
+  const [stem, ext] = splitExt(sample), d = new Date(), p2 = x => String(x).padStart(2, '0');
+  const ctx = { name: clean ? cleanStem(stem) : stem, ext, n: 1, date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`, time: `${p2(d.getHours())}-${p2(d.getMinutes())}`, size: '1.4GB', res: '1080p' };
+  let out = renderTpl(tpl, ctx).replace(/[\\/:*?"<>|\r\n\t]/g, '_').replace(/\s{2,}/g, ' ').trim();
+  if (ext && !tpl.includes('{ext}') && !out.toLowerCase().endsWith(ext.toLowerCase()) && !/\.[a-z0-9]{2,5}$/.test(out)) out += ext;
+  return out;
+}
 
-  el.pattern.addEventListener("input", () => { state.pattern = el.pattern.value; update(); });
-  el.capTpl.addEventListener("input", () => { state.caption_tpl = el.capTpl.value; update(); });
-  el.clean.addEventListener("change", () => { state.clean = el.clean.checked; haptic("impactOccurred", "light"); update(); });
-  el.autothumb.addEventListener("change", () => { state.autothumb = el.autothumb.checked; haptic("impactOccurred", "light"); update(); });
+/* ---------------- ابزارهای رابط ---------------- */
+const MODES = [['auto', 'خودکار'], ['document', 'داکیومنت'], ['video', 'ویدیو'], ['audio', 'آهنگ']];
+const CAPS = [['keep', 'اصلی'], ['none', 'بدون کپشن'], ['custom', 'قالب سفارشی']];
+function seg(el, opts, cur, on) {
+  el.innerHTML = opts.map(([v, t]) => `<button data-v="${v}" class="${String(v) === String(cur) ? 'on' : ''}">${t}</button>`).join('');
+  $$('button', el).forEach(b => b.onclick = () => { $$('button', el).forEach(x => x.classList.toggle('on', x === b)); haptic(); on(b.dataset.v); });
+}
+const segVal = el => ($('button.on', el) || {}).dataset?.v;
+function go(p) {
+  $$('.page').forEach(x => x.classList.toggle('on', x.id === 'p-' + p));
+  $$('#nav button').forEach(x => x.classList.toggle('on', x.dataset.p === p));
+  haptic(); window.scrollTo(0, 0);
+}
+$$('#nav button').forEach(b => b.onclick = () => go(b.dataset.p));
 
-  function paintInputs() {
-    el.pattern.value = state.pattern; el.clean.checked = !!state.clean; el.autothumb.checked = !!state.autothumb;
-    el.capTpl.value = state.caption_tpl || "";
-    document.querySelectorAll("#mode input").forEach((i) => (i.checked = i.value === state.mode));
-    document.querySelectorAll("#caption input").forEach((i) => (i.checked = i.value === state.caption));
-  }
+/* ---------------- خانه ---------------- */
+function renderHome() {
+  if (!S) { $('#stats').innerHTML = '<div class="empty" style="grid-column:1/-1">منتظر ربات…</div>'; return; }
+  const b = S.bot;
+  $('#stats').innerHTML = [
+    [b.files, 'فایل پردازش‌شده'], [fmtSize(b.bytes), 'حجم کل'], [fmtSize(b.disk), 'فضای آزاد دیسک'], [fmtDur(b.up), 'آپ‌تایم'],
+  ].map(([v, l]) => `<div class="stat"><b>${esc(v)}</b><span>${l}</span></div>`).join('');
+  const j = S.job, jc = $('#jobcard');
+  if (j) {
+    const pct = j.tot ? Math.min(100, j.cur * 100 / j.tot) : 0;
+    const act = { send: 'تغییر نام و ارسال', link: 'ساخت لینک', shots: 'شیت فریم' }[j.act] || 'کار';
+    jc.style.display = '';
+    jc.innerHTML = `<h2>⚡ در حال اجرا — ${act}${j.n > 1 ? ` (${j.i}/${j.n})` : ''}</h2>
+      <div class="item" style="padding:0"><div class="nm">${esc(j.name || '')}</div></div>
+      <div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div>
+      <div class="row"><span class="grow">${esc(j.label || '…')}</span><b>${j.tot ? pct.toFixed(1) + '%' : ''}</b></div>
+      <div class="hint">${j.tot ? `${fmtSize(j.cur)} / ${fmtSize(j.tot)}` : ''} ${j.spd ? `• 🚀 ${fmtSize(j.spd)}/s` : ''} ${j.eta ? `• ⏱ ${fmtDur(j.eta)}` : ''}</div>
+      <div class="row" style="margin-top:8px"><button class="bad" onclick="stopJob()">⛔ توقف</button></div>`;
+  } else jc.style.display = 'none';
 
-  // ---------- اعتبارسنجی و پیش‌نمایش ----------
-  function payload() {
-    const p = {
-      v: 1, pattern: state.pattern.trim(), clean: !!state.clean, autothumb: !!state.autothumb,
-      mode: state.mode, caption: state.caption, caption_tpl: (state.caption_tpl || "").trim(),
-    };
-    if (p.caption === "custom" && !p.caption_tpl) p.caption = "keep";
-    return p;
-  }
-  function validate(p) {
-    if (!p.pattern) return "الگوی نام نمی‌تونه خالی باشه.";
-    if (!/\{(name|n)(?::\d{1,2})?\}/.test(p.pattern)) return null; // فقط هشدار، خطا نیست
-    return null;
-  }
-  function update() {
-    const p = payload();
-    // هشدار الگو
-    const noUnique = p.pattern && !/\{(name|n)(?::\d{1,2})?\}/.test(p.pattern);
-    $("patNote").textContent = noUnique ? "⚠️ بدون {name} یا {n}، همه‌ی فایل‌ها یک اسم می‌گیرن." : "با ضربه روی متغیرها، داخل الگو درج می‌شن.";
-    $("patNote").className = "note" + (noUnique ? " warn" : "");
-    // پیش‌نمایش
-    const box = $("preview"); box.textContent = "";
-    SAMPLES.forEach((s, i) => {
-      const to = p.pattern ? buildName(p.pattern, s, i + 1, p.clean) : "—";
-      const d = mk("div", { className: "pv" });
-      d.append(mk("div", { className: "from" }, `${s.icon} ${s.name}`), mk("div", { className: "to" }, "← " + to));
-      box.appendChild(d);
-    });
-    // کپشن
-    $("capBox").classList.toggle("hide", state.caption !== "custom");
-    if (state.caption === "custom") {
-      const ex = buildName(p.pattern || "{name}{ext}", SAMPLES[0], 1, p.clean);
-      const [stem, ext] = splitExt(ex);
-      const cap = render(state.caption_tpl || "", { filename: ex, name: stem, ext, n: 1, date: DATE, time: TIME, size: SAMPLES[0].size, res: "1080p" });
-      const pv = $("capPv"); pv.textContent = "";
-      if (cap) pv.append("نمونه: ", mk("bdi", {}, cap)); else pv.textContent = "قالب رو بنویس تا نمونه‌اش رو ببینی.";
-    }
-    // اعتبار + اندازه
-    const err = validate(p) || (blen(JSON.stringify(p)) > 4000 ? "حجم تنظیمات زیاد است؛ الگو یا کپشن رو کوتاه‌تر کن." : "");
-    $("err").textContent = err || "";
-    const dirty = JSON.stringify(p) !== JSON.stringify(normalize(initial));
-    setSave(!err, dirty);
-  }
-  function normalize(o) {
-    const p = { v: 1, pattern: (o.pattern || "").trim(), clean: !!o.clean, autothumb: !!o.autothumb, mode: o.mode, caption: o.caption, caption_tpl: (o.caption_tpl || "").trim() };
-    if (p.caption === "custom" && !p.caption_tpl) p.caption = "keep";
-    return p;
-  }
+  const ac = $('#acctcard');
+  if (S.accts) {
+    ac.style.display = '';
+    ac.innerHTML = `<h2>☁️ اکانت‌های Google Drive</h2>` +
+      (S.accts.length ? S.accts.map(a => `<div class="item"><div class="nm" style="direction:ltr">${esc(a.email)}</div>
+        <span class="sub">${a.bad ? '⚠️ قطع شده' : '💾 ' + esc(a.free)}</span>
+        ${a.id === 'primary' ? '' : `<button class="sm bad" onclick="delAcct('${esc(a.id)}')">جدا</button>`}</div>`).join('') : '<div class="empty">هیچ اکانتی وصل نیست.</div>') +
+      `<div class="row" style="margin-top:8px"><button class="pri grow" id="addAcct">➕ افزودن اکانت گوگل</button></div><div id="devbox"></div>
+       <div class="hint">برای اینکه اکانت‌ها برای همیشه بمونن و هر بار کد نخوای: توی ربات <code>/export</code> بزن و متن رو توی Secret کولب با نام <code>GOOGLE_ACCOUNTS</code> بذار.</div>`;
+    $('#addAcct').onclick = addAcct; renderDev();
+  } else ac.style.display = 'none';
 
-  // ---------- ذخیره ----------
-  function save() {
-    const p = payload(); const err = validate(p);
-    if (err) { haptic("notificationOccurred", "error"); return; }
-    const data = JSON.stringify(p);
-    if (blen(data) > 4096) { haptic("notificationOccurred", "error"); return; }
-    if (inTG) {
-      haptic("notificationOccurred", "success");
-      safe(() => tg.disableClosingConfirmation());
-      tg.sendData(data); // سرویس‌مسیج برای ربات می‌ره و مینی‌اپ بسته می‌شه
-    } else {
-      const out = $("out"); out.style.display = "block"; out.textContent = data;
-      out.scrollIntoView({ behavior: "smooth", block: "end" });
-    }
-  }
-  function setSave(valid, dirty) {
-    if (inTG && tg.MainButton) {
-      safe(() => { valid ? tg.MainButton.enable() : tg.MainButton.disable(); });
-      safe(() => { dirty ? tg.enableClosingConfirmation() : tg.disableClosingConfirmation(); });
-    } else {
-      $("saveBtn").disabled = !valid;
-    }
-  }
+  const gc = $('#grpcard');
+  if (S.groups && S.groups.length) {
+    gc.style.display = '';
+    gc.innerHTML = `<h2>👥 گروه‌های مجاز</h2>` + S.groups.map(g => `<div class="item"><div class="nm mono">${esc(g)}</div><button class="sm bad" onclick="delGroup(${+g})">حذف</button></div>`).join('');
+  } else gc.style.display = 'none';
+}
+window.stopJob = async () => { await act('job_stop', {}, 'درخواست توقف ارسال شد'); };
+window.delAcct = async id => { if (confirm('این اکانت جدا بشه؟ فایل‌های میزبانی‌شده‌اش پاک می‌شن.')) await act('acct_del', { id }, 'جدا شد'); };
+window.delGroup = async id => { if (confirm('گروه از لیست مجازها حذف بشه؟')) await act('group_del', { id }, 'حذف شد'); };
+let DEV = null;   // کد اتصال اکانت در حال انجام (با هر رندر دوباره نمایش داده می‌شه)
+function renderDev() {
+  const box = $('#devbox'); if (!box) return;
+  if (DEV && S && S.accts && S.accts.length > DEV.count) { DEV = null; toast('✅ اکانت گوگل وصل شد'); }
+  if (!DEV || Date.now() > DEV.until) { box.innerHTML = ''; DEV = null; return; }
+  box.innerHTML = `<div class="code">${esc(DEV.code)}</div><div class="row"><button class="grow" id="openDev">🌐 باز کردن ${esc(DEV.url.replace('https://', ''))}</button></div>
+    <div class="hint">کد بالا رو اونجا وارد کن و با اکانت دلخواه اجازه بده؛ بعدش خودکار اینجا ظاهر می‌شه.</div>`;
+  $('#openDev').onclick = () => (tg && tg.openLink) ? tg.openLink(DEV.url) : window.open(DEV.url, '_blank');
+}
+async function addAcct() {
+  const r = await act('acct_connect', {});
+  if (!r) return;
+  DEV = { code: r.code, url: r.url, until: Date.now() + (r.exp || 900) * 1000, count: ((S && S.accts) || []).length };
+  renderDev();
+}
+$('#goUrl').onclick = async () => {
+  const urls = $('#urls').value.split(/\s+/).filter(x => /^https?:\/\//i.test(x));
+  if (!urls.length) return toast('لینک معتبری نیست', true);
+  const r = await act('get_url', { urls }, null);
+  if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#urls').value = ''; }
+};
+$('#pasteUrl').onclick = async () => { try { $('#urls').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
-  // ---------- راه‌اندازی ----------
-  paintInputs();
-  if (inTG) {
-    safe(() => {
-      tg.MainButton.setParams({ text: "ذخیره و ارسال به ربات", is_visible: true });
-      tg.MainButton.onClick(save);
-    });
-  } else {
-    $("demo").style.display = "block";
-    $("bar").classList.add("show");
-    $("saveBtn").addEventListener("click", save);
+/* ---------------- صف ---------------- */
+let qPatDirty = false;
+$('#qpat').oninput = () => qPatDirty = true;
+function renderQueue() {
+  const q = (S && S.q) || [], sess = S && S.sess;
+  const nb = $('#qn_b'); nb.style.display = q.length ? '' : 'none'; nb.textContent = q.length;
+  $('#qlist').innerHTML = q.length ? q.map(it => `<div class="item"><span>${{ video: '🎬', audio: '🎵' }[it.k] || '📄'}</span><div class="nm">${esc(it.name)}</div><span class="sub">${fmtSize(it.size)}</span>
+      <button class="sm bad" ${sess && sess.busy ? 'disabled' : ''} onclick="rmItem(${it.i})">✕</button></div>`).join('')
+    : `<div class="empty">صف خالیه.<br>فایل رو توی چت برای ربات بفرست.</div>`;
+  const busy = !!(sess && sess.busy), none = !q.length;
+  ['qSend', 'qLink', 'qShots', 'qClear'].forEach(id => $('#' + id).disabled = none || busy);
+  if (S && !S.drive) $('#qLink').disabled = true;
+  const cur = (sess && sess.mode) || (S && S.cfg.mode) || 'auto';
+  if (!$('#qmode').dataset.init || !sess) { seg($('#qmode'), MODES, cur, () => {}); $('#qmode').dataset.init = sess ? '1' : ''; }
+  if (!$('#qn').dataset.init) { seg($('#qn'), [4, 6, 8, 12, 16].map(x => [x, x]), (sess && sess.n) || 8, () => {}); $('#qn').dataset.init = '1'; }
+  if (!qPatDirty && document.activeElement !== $('#qpat')) $('#qpat').value = (sess && sess.pat) || '';
+}
+window.rmItem = async i => { await act('queue_remove', { i }); };
+async function runQ(action) {
+  const pat = $('#qpat').value.trim();
+  const r = await act('queue_run', { action, pattern: pat, mode: segVal($('#qmode')), n: +segVal($('#qn')) || 8 }, 'شروع شد — پیشرفت رو توی خانه ببین');
+  if (r) { qPatDirty = false; go('home'); }
+}
+$('#qSend').onclick = () => runQ('send'); $('#qLink').onclick = () => runQ('link'); $('#qShots').onclick = () => runQ('shots');
+$('#qClear').onclick = async () => { if (confirm('صف خالی بشه؟')) await act('queue_clear', {}, 'صف خالی شد'); };
+
+/* ---------------- تنظیمات ---------------- */
+let cfg = null, setDirty = false;
+const TOKS = ['{name}', '{ext}', '{n}', '{n:3}', '{date}', '{time}', '{size}', '{res}'];
+$('#toks').innerHTML = TOKS.map(t => `<button class="sm" data-t="${t}">${t}</button>`).join('');
+$$('#toks button').forEach(b => b.onclick = () => {
+  const i = $('#pat'), s = i.selectionStart ?? i.value.length, e = i.selectionEnd ?? s;
+  i.value = i.value.slice(0, s) + b.dataset.t + i.value.slice(e); i.focus(); i.setSelectionRange(s + b.dataset.t.length, s + b.dataset.t.length); touch();
+});
+function touch() { setDirty = true; updPrev(); }
+function updPrev() {
+  if (!cfg) return;
+  cfg.pattern = $('#pat').value;
+  $('#prevn').textContent = previewName(cfg.pattern || '{name}{ext}', cfg.clean, $('#sample').value || 'file.mkv');
+  const showCap = cfg.caption === 'custom';
+  $('#capt').style.display = showCap ? '' : 'none'; $('#capprev').style.display = showCap ? '' : 'none';
+  if (showCap) {
+    const fn = previewName(cfg.pattern || '{name}{ext}', cfg.clean, $('#sample').value || 'file.mkv'), [st, ex] = splitExt(fn), d = new Date();
+    $('#capprev span').textContent = renderTpl($('#capt').value || '', { filename: fn, name: st, ext: ex, n: 1, date: d.toISOString().slice(0, 10), time: '12-00', size: '1.4GB', res: '1080p' });
   }
-  update();
-  // برای تست خودکار
-  window.__miniapp = { buildName, cleanStem, safeName, render, payload, state };
-})();
+}
+function fillSettings(force) {
+  const c = (S && S.cfg) || LEGACY;
+  if (!c) return;
+  if (cfg && setDirty && !force) return;
+  cfg = { ...c };
+  $('#pat').value = cfg.pattern; $('#capt').value = cfg.caption_tpl || '';
+  $('#clean').classList.toggle('on', !!cfg.clean); $('#autothumb').classList.toggle('on', !!cfg.autothumb);
+  seg($('#mode'), MODES, cfg.mode, v => { cfg.mode = v; touch(); });
+  seg($('#cap'), CAPS, cfg.caption, v => { cfg.caption = v; touch(); });
+  setDirty = false; updPrev();
+}
+['clean', 'autothumb'].forEach(k => $('#' + k).onclick = e => { cfg[k] = !cfg[k]; e.currentTarget.classList.toggle('on', cfg[k]); haptic(); touch(); });
+$('#pat').oninput = touch; $('#sample').oninput = updPrev; $('#capt').oninput = () => { cfg.caption_tpl = $('#capt').value; touch(); };
+$('#save').onclick = async () => {
+  if (!cfg) return;
+  const body = { pattern: $('#pat').value.trim(), clean: !!cfg.clean, autothumb: !!cfg.autothumb, mode: cfg.mode, caption: cfg.caption, caption_tpl: $('#capt').value.trim() };
+  if (!body.pattern) return toast('الگوی نام خالیه', true);
+  if (conn === 'live') { if (await act('set_cfg', body, '✅ تنظیمات ذخیره شد')) { setDirty = false; } }
+  else if (tg) { tg.sendData(JSON.stringify(body)); }   // حالت آفلاین (روش قدیمی؛ مینی‌اپ بسته می‌شه)
+  else toast('اتصال با ربات نیست', true);
+};
+function renderSettingsExtra() {
+  $('#savehint').textContent = conn === 'live' ? 'تنظیمات روی ربات ذخیره می‌شن و برای همه‌ی فایل‌های بعدی اعمال می‌شن.' : 'حالت آفلاین: ذخیره از مسیر قدیمی انجام می‌شه و مینی‌اپ بسته می‌شه.';
+  $('#thumbcard').innerHTML = `<h2>🖼 تامبنیل پیش‌فرض</h2><div class="row"><span class="grow">${S ? (S.thumb ? '✅ ذخیره شده' : 'ذخیره نشده') : '—'}</span>${S && S.thumb ? '<button class="sm bad" id="dth">حذف</button>' : ''}</div><div class="hint">برای تنظیم: توی چت یه عکس (نه فایل) برای ربات بفرست.</div>`;
+  const d = $('#dth'); if (d) d.onclick = () => act('thumb_del', {}, 'حذف شد');
+}
+
+/* ---------------- لینک‌ها ---------------- */
+function renderLinks() {
+  const L = (S && S.links) || [];
+  $('#llist').innerHTML = L.length ? L.map(l => `<div class="item" data-k="${esc(l.k)}"><div style="flex:1;min-width:0"><div class="nm">${esc(l.name)}</div>
+      <div class="sub">${fmtSize(l.size)} • ⏳ <span class="left" data-exp="${l.exp}"></span></div></div>
+      <button class="sm" onclick="copyLink('${esc(l.k)}')">📋</button><button class="sm" onclick="openLink('${esc(l.k)}')">🌐</button><button class="sm bad" onclick="delLink('${esc(l.k)}')">🗑</button></div>`).join('')
+    : '<div class="empty">لینک فعالی نیست.<br>از صف «🔗 لینک Drive» رو بزن.</div>';
+  $('#lAll').disabled = !L.length; tickLeft();
+}
+const tickLeft = () => $$('.left').forEach(e => e.textContent = fmtLeft(+e.dataset.exp - Date.now() / 1000));
+setInterval(tickLeft, 15000);
+const linkOf = k => ((S && S.links) || []).find(l => l.k === k);
+window.copyLink = async k => { const l = linkOf(k); if (!l) return; try { await navigator.clipboard.writeText(l.url); toast('لینک کپی شد'); } catch (e) { prompt('لینک:', l.url); } };
+window.openLink = k => { const l = linkOf(k); if (l) (tg && tg.openLink) ? tg.openLink(l.view) : window.open(l.view, '_blank'); };
+window.delLink = async k => { if (confirm('این لینک و فایلش از Drive پاک بشه؟')) await act('link_del', { k }, 'حذف شد'); };
+$('#lAll').onclick = async () => { if (confirm('همه‌ی لینک‌ها حذف بشن؟')) await act('link_del_all', {}, 'همه حذف شدن'); };
+
+/* ---------------- چت ---------------- */
+let cBusy = false;
+function bubble(who, text, err, via) {
+  const d = document.createElement('div'); d.className = `b ${who}${err ? ' err' : ''}`;
+  d.textContent = text; if (via) { const s = document.createElement('small'); s.textContent = via; d.appendChild(s); }
+  const log = $('#chatlog'); log.appendChild(d); log.scrollTop = log.scrollHeight;
+}
+function chatBusy(v) { cBusy = v; $('#cSend').disabled = v; $('#cSend').textContent = v ? '…' : 'ارسال'; }
+async function sendChat() {
+  const t = $('#cin').value.trim(); if (!t || cBusy) return;
+  $('#cin').value = ''; bubble('me', t); chatBusy(true);
+  if (!(await act('chat', { text: t }))) chatBusy(false);
+  else setTimeout(() => chatBusy(false), 260000);
+}
+$('#cSend').onclick = sendChat; $('#cin').onkeydown = e => { if (e.key === 'Enter') sendChat(); };
+$('#cRst').onclick = async () => { if (await act('chat_reset', {}, 'حافظه‌ی گفتگو پاک شد')) $('#chatlog').innerHTML = ''; };
+$('#cTog').onclick = () => act('chat_toggle', {});
+function renderChat() {
+  const c = S && S.chat;
+  $('#chatst').textContent = !c ? '' : !c.enabled ? 'چت هوشمند خاموشه (سلول ۵)' : (c.on ? 'چت پیام‌های متنی توی تلگرام: روشن' : 'چت پیام‌های متنی توی تلگرام: خاموش');
+  $('#cTog').textContent = c && c.on ? '🔇 خاموش' : '🔈 روشن'; $('#cTog').style.display = c && c.enabled ? '' : 'none';
+  $('#provs').innerHTML = c ? c.prov.map(x => esc(x)).join('<br>') : '';
+  const adm = $('#provadm');
+  if (S && S.accts && c && c.enabled) {
+    adm.innerHTML = `<div class="row wrap" style="margin-top:8px">${['auto', 'gemini', 'colab', 'local'].map(p => `<button class="sm ${(c.pin || 'auto') === p ? 'pri' : ''}" onclick="setProv('${p}')">${p}</button>`).join('')}<button class="sm" onclick="nextModel()">⏭ مدل محلی بعدی</button></div>`;
+  } else adm.innerHTML = '';
+}
+window.setProv = p => act('provider', { p }, 'اولویت منبع عوض شد');
+window.nextModel = () => act('model_next', {}, 'در حال رفتن به مدل بعدی…');
+
+/* ---------------- رندر کلی ---------------- */
+function renderAll() {
+  renderHome(); renderQueue(); renderLinks(); renderChat(); fillSettings(false); renderSettingsExtra();
+}
+fillSettings(false); renderAll();
+boot();
 </script>
 </body>
 </html>
