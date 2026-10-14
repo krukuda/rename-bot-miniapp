@@ -235,6 +235,24 @@ const TID = Q.get('t'), KEYB = Q.get('k'), RELAY = (Q.get('r') || 'https://ntfy.
 const UP = `rnb${TID}u`, DN = `rnb${TID}d`;
 let LEGACY = null; try { LEGACY = JSON.parse(dec.decode(b64uToBytes(Q.get('s')))); } catch (e) {}
 let S = null, conn = 'connecting', lastRx = 0, nonce = 0, es = null, helloTries = 0;
+let relayState = 'init', postFail = false, authErr = '';
+// وقتی مینی‌اپ از «دکمه‌ی کیبورد» باز بشه، تلگرام طبق مستندات initData رو خالی می‌ده (فقط menu button / دکمه‌ی اینلاین / لینک مستقیم می‌دن)
+const INIT_EMPTY = !!(tg && tg.platform && tg.platform !== 'unknown' && !tg.initData);
+const MSG_NOINIT = 'پنل از «دکمه‌ی کیبورد» باز شده و تلگرام در این حالت هویت (initData) نمی‌ده، برای همین ربات پیام‌های پنل رو رد می‌کنه. '
+  + 'پنل رو از دکمه‌ی «🎛 باز کردن پنل» زیر پیام /app یا از دکمه‌ی منوی «🎛 پنل» کنار فیلد پیام باز کن. (ذخیره‌ی ساده‌ی تنظیمات همچنان ممکنه.)';
+const ERR_TEXT = {
+  noinit: MSG_NOINIT,
+  expired: 'نشست پنل بیش از ۲۴ ساعت پیش باز شده و منقضی شده؛ پنل رو ببند و دوباره باز کن.',
+  bad: 'تلگرام هویت معتبری برای پنل نداد؛ پنل رو از دکمه‌ی زیر پیام /app یا منوی «🎛 پنل» باز کن. اگه حل نشد، توی ربات «/app reset» بزن.',
+};
+function offlineHtml() {
+  let why, canRetry = true;
+  if (INIT_EMPTY) { why = MSG_NOINIT; canRetry = false; }
+  else if (authErr) why = authErr;
+  else if (relayState === 'error' || postFail) why = 'رله‌ی ' + RELAY.replace(/^https?:\/\//, '') + ' از این شبکه در دسترس نیست (اینترنت قطع، فیلتر یا نیاز به VPN؟). ربات ممکنه روشن باشه ولی پیام‌ها بهش نمی‌رسه.';
+  else why = 'ربات جواب نمی‌ده (خاموشه یا هنوز بالا نیومده). رله در دسترسه.';
+  return esc(why) + ' ' + (canRetry ? '<button class="sm" onclick="retry()">تلاش مجدد</button>' : '');
+}
 const pending = new Map();
 
 function setConn(c) {
@@ -242,14 +260,17 @@ function setConn(c) {
   const el = $('#chip'); el.className = 'chip ' + (c === 'live' ? 'live' : c === 'offline' ? 'off' : '');
   $('#chipt').textContent = c === 'live' ? 'زنده' : c === 'offline' ? 'آفلاین' : 'در حال اتصال…';
   const b = $('#banner');
-  if (c === 'offline') { b.className = 'banner on'; b.innerHTML = 'ارتباط زنده با ربات برقرار نیست (ربات خاموشه یا رله در دسترس نیست). فقط ذخیره‌ی تنظیمات به روش قدیمی ممکنه. <button class="sm" onclick="retry()">تلاش مجدد</button>'; }
+  if (c === 'offline') { b.className = 'banner on'; b.innerHTML = '<b>ارتباط زنده برقرار نیست.</b> ' + offlineHtml(); }
   else b.className = 'banner';
 }
 async function send(obj) {
   nonce = Math.max(nonce + 1, Date.now() * 1000);
   obj.n = nonce; obj.i = tg ? tg.initData : '';
-  const r = await fetch(`${RELAY}/${UP}`, { method: 'POST', body: await sealFrame(obj, UP) });
-  if (!r.ok) throw new Error('رله ' + r.status);
+  let r;
+  try { r = await fetch(`${RELAY}/${UP}`, { method: 'POST', body: await sealFrame(obj, UP) }); }
+  catch (e) { postFail = true; throw new Error('رله در دسترس نیست'); }
+  if (!r.ok) { postFail = true; throw new Error('رله ' + r.status); }
+  postFail = false;
 }
 function call(c, d, timeout = 25000) {
   return new Promise((res, rej) => {
@@ -265,26 +286,30 @@ async function act(c, d, okMsg) {
 }
 function onMsg(o) {
   lastRx = Date.now();
-  if (o.t === 'state') { S = o.d; setConn('live'); helloTries = 0; renderAll(); }
+  if (o.t === 'state') { S = o.d; authErr = ''; setConn('live'); helloTries = 0; renderAll(); }
+  else if (o.t === 'err') { authErr = ERR_TEXT[o.code] || ERR_TEXT.bad; if (conn !== 'live') setConn('offline'); }
   else if (o.t === 'ack') { const p = pending.get(o.r); if (p) { clearTimeout(p.t); pending.delete(o.r); o.ok ? p.res(o.d || {}) : p.rej(new Error(o.e || 'خطا')); } }
   else if (o.t === 'chat') { bubble('bot', o.text, o.err, o.via); chatBusy(false); }
   else if (o.t === 'pong') { if (conn !== 'live') setConn('live'); }
 }
 function openStream() {
   if (es) es.close();
+  relayState = 'init';
   es = new EventSource(`${RELAY}/${DN}/sse`);
-  es.addEventListener('open', () => hello());
+  es.addEventListener('open', () => { relayState = 'open'; hello(); });
+  es.onerror = () => { if (relayState !== 'open') relayState = 'error'; };  // EventSource خودش دوباره تلاش می‌کنه
   es.onmessage = async ev => {
     try { const m = JSON.parse(ev.data); if (m.event && m.event !== 'message') return; onMsg(await openFrame(m.message, DN)); } catch (e) {}
   };
 }
 function hello() { send({ c: 'hello', r: 'h' + Date.now() }).catch(() => {}); }
-function retry() { setConn('connecting'); helloTries = 0; openStream(); }
+function retry() { authErr = ''; postFail = false; setConn('connecting'); helloTries = 0; openStream(); }
 window.retry = retry;
 async function boot() {
   if (!TID || !KEYB) { setConn('offline'); $('#banner').innerHTML = 'لینک پنل ناقصه؛ توی ربات دوباره /app بزن و از همون دکمه باز کن.'; renderAll(); return; }
   try { KEY = await crypto.subtle.importKey('raw', b64uToBytes(KEYB), 'AES-GCM', false, ['encrypt', 'decrypt']); }
   catch (e) { setConn('offline'); return; }
+  if (INIT_EMPTY) { setConn('offline'); renderAll(); return; }  // بی‌فایده‌ست؛ ربات بدون initData فریم‌ها رو رد می‌کنه
   openStream();
   setInterval(() => {
     if (document.hidden) return;
