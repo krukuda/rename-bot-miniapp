@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="color-scheme" content="light dark">
+<meta name="rename-bot-personal" content="1">
+<title>تنظیمات شخصی</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:var(--tg-theme-bg-color,#f3f5fb);
+  --card:var(--tg-theme-secondary-bg-color,#ffffff);
+  --tx:var(--tg-theme-text-color,#14161a);
+  --hint:var(--tg-theme-hint-color,#7b8190);
+  --ac:var(--tg-theme-button-color,#3b82f6);
+  --act:var(--tg-theme-button-text-color,#fff);
+  --bad:var(--tg-theme-destructive-text-color,#e5484d);
+  --ok:#22a06b;
+  --line:color-mix(in srgb,var(--hint) 22%,transparent);
+  --soft:color-mix(in srgb,var(--ac) 13%,transparent);
+  --glass:color-mix(in srgb,var(--card) 55%,transparent);
+  --glass-brd:rgba(255,255,255,.65);
+  --glass-hi:rgba(255,255,255,.55);
+  --shadow:0 8px 30px rgba(40,60,120,.14);
+  --blur:blur(22px) saturate(1.6);
+  --r:20px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:var(--tg-theme-bg-color,#0e1116);--card:var(--tg-theme-secondary-bg-color,#171b22);--tx:var(--tg-theme-text-color,#eef0f4);
+        --glass-brd:rgba(255,255,255,.13);--glass-hi:rgba(255,255,255,.14);--shadow:0 8px 30px rgba(0,0,0,.45)}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0;background:transparent;color:var(--tx);
+  font:15px/1.6 Vazirmatn,system-ui,-apple-system,"Segoe UI",Tahoma,"Noto Naskh Arabic",sans-serif;
+  padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(55% 38% at 12% 8%,color-mix(in srgb,var(--ac) 48%,transparent),transparent 70%),
+    radial-gradient(48% 36% at 92% 28%,rgba(179,107,255,.32),transparent 70%),
+    radial-gradient(60% 45% at 40% 100%,rgba(46,230,200,.26),transparent 70%)}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px;
+  background:color-mix(in srgb,var(--bg) 60%,transparent);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border-bottom:1px solid var(--glass-brd)}
+.top h1{font-size:17px;margin:0;flex:1}
+.chip{font-size:12px;padding:4px 11px;border-radius:99px;background:var(--glass);border:1px solid var(--glass-brd);color:var(--hint)}
+main{max-width:640px;margin:0 auto;padding:14px 14px 0}
+.card{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border:1px solid var(--glass-brd);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;
+  box-shadow:var(--shadow),inset 0 1px 0 var(--glass-hi)}
+.card h2{font-size:14px;margin:0 0 10px;color:var(--hint);font-weight:600}
+.note{font-size:13px;color:var(--hint);margin-top:8px}
+.banner{display:none;margin:0 0 12px;padding:10px 14px;border-radius:14px;background:color-mix(in srgb,#f59e0b 20%,transparent);font-size:13px}
+.banner.on{display:block}
+input[type=text],textarea{width:100%;font:inherit;color:var(--tx);background:color-mix(in srgb,var(--card) 60%,transparent);
+  border:1.5px solid var(--glass-brd);border-radius:14px;padding:10px 12px;outline:none;min-height:42px}
+input:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 25%,transparent)}
+textarea{resize:vertical;min-height:84px}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;direction:ltr;text-align:left;unicode-bidi:plaintext}
+button{font:inherit;border:0;border-radius:12px;padding:8px 12px;background:var(--soft);color:var(--ac);cursor:pointer;min-height:38px}
+button:active{transform:scale(.97)}
+.tok{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tok button{font-size:12px;padding:4px 10px;min-height:30px;border-radius:99px;border:1px solid var(--glass-brd);background:var(--glass)}
+.seg{display:flex;gap:3px;padding:3px;border-radius:14px;background:color-mix(in srgb,var(--hint) 12%,transparent)}
+.seg button{flex:1;background:transparent;color:var(--tx);padding:7px 4px;min-height:36px;font-size:13px}
+.seg button.on{background:var(--glass);color:var(--tx);border:1px solid var(--glass-brd);
+  box-shadow:0 2px 8px rgba(0,0,0,.14),inset 0 1px 0 var(--glass-hi);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+.row{display:flex;align-items:center;gap:10px;padding:6px 0}
+.row .grow{flex:1}
+.switch{width:50px;height:30px;border-radius:99px;background:color-mix(in srgb,var(--hint) 30%,transparent);position:relative;cursor:pointer;flex:none;
+  border:1px solid var(--glass-brd);transition:.2s}
+.switch::after{content:"";position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:.2s}
+.switch.on{background:var(--ac)}
+.switch.on::after{right:23px}
+.prev{margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--soft);font-size:14px}
+.prev b{display:block;font-size:12px;color:var(--hint);font-weight:500;margin-bottom:2px}
+.lim{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.lim:last-child{border-bottom:0}.lim span:last-child{color:var(--hint)}
+details{margin:0}summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--hint)}
+details ul{margin:10px 0 0;padding:0 18px;font-size:14px}details li{margin:5px 0}
+.bar{position:fixed;inset:auto 0 0 0;z-index:30;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(to top,color-mix(in srgb,var(--bg) 75%,transparent) 55%,transparent)}
+.bar button{display:block;width:100%;max-width:640px;margin:0 auto;min-height:50px;font-weight:700;color:var(--act);border-radius:16px;
+  border:1px solid rgba(255,255,255,.35);
+  background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 92%,#fff),color-mix(in srgb,var(--ac) 78%,#000));
+  box-shadow:0 8px 24px color-mix(in srgb,var(--ac) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.45)}
+#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%) translateY(-20px);opacity:0;z-index:50;padding:9px 16px;border-radius:99px;
+  background:color-mix(in srgb,var(--card) 85%,transparent);border:1px solid var(--glass-brd);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  box-shadow:var(--shadow);font-size:14px;transition:.25s;pointer-events:none}
+#toast.on{opacity:1;transform:translateX(-50%)}#toast.err{color:var(--bad)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .card,.chip,input[type=text],textarea{background:color-mix(in srgb,var(--card) 92%,transparent)}
+}
+</style>
+</head>
+<body>
+<header class="top"><h1>⚙️ تنظیمات شخصی</h1><span class="chip">نسخه‌ی شخصی</span></header>
+<main>
+  <div class="banner" id="demo">این صفحه باید از داخل تلگرام و با دکمه‌ی «⚙️ تنظیمات شخصی» (بعد از /app) باز بشه تا ذخیره کار کنه.</div>
+
+  <section class="card">
+    <h2>🧩 الگوی نام فایل</h2>
+    <input id="pat" type="text" class="mono" autocomplete="off" spellcheck="false" placeholder="{name}{ext}">
+    <div class="tok" id="toks"></div>
+    <div class="note">روی متغیرها بزن تا داخل الگو درج بشن. مثال نمونه‌ی فایل:</div>
+    <input id="sample" type="text" class="mono" autocomplete="off" spellcheck="false" value="My.Movie.2024.1080p.mkv" style="margin-top:6px">
+    <div class="prev"><b>پیش‌نمایش نام جدید</b><span id="prevn" class="mono"></span></div>
+  </section>
+
+  <section class="card">
+    <h2>🎛 گزینه‌ها</h2>
+    <div class="row"><span class="grow">🧹 پاک‌سازی هوشمند نام (تبلیغ، آیدی، لینک، نقطه و _ ← فاصله)</span><div class="switch" id="clean"></div></div>
+    <div class="row"><span class="grow">🎞 ساخت خودکار تامبنیل از فریم ویدیو</span><div class="switch" id="autothumb"></div></div>
+    <h2 style="margin-top:12px">📤 نوع ارسال</h2>
+    <div class="seg" id="mode"></div>
+  </section>
+
+  <section class="card">
+    <h2>📝 کپشن</h2>
+    <div class="seg" id="cap"></div>
+    <textarea id="capt" class="mono" placeholder="🎬 {filename}" style="margin-top:10px;display:none"></textarea>
+    <div class="prev" id="capprev" style="display:none"><b>پیش‌نمایش کپشن</b><span></span></div>
+  </section>
+
+  <section class="card" id="limcard" style="display:none">
+    <h2>📊 سقف‌های نسخه‌ی شخصی</h2>
+    <div id="lims"></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>📖 راهنمای سریع</summary>
+      <ul>
+        <li>هر فایلی (داکیومنت/ویدیو/آهنگ) برای ربات بفرست تا منوی تغییر نام بیاد.</li>
+        <li>یه <b>عکس</b> بفرستی، تامبنیل پیش‌فرض خودت ذخیره می‌شه (حذف: <code>/delthumb</code>).</li>
+        <li>لینک مستقیم یا Google Drive بفرست (یا <code>/get لینک</code>) تا دانلود و با تنظیمات تو ارسال بشه.</li>
+        <li>چند فایل پشت‌هم: <code>/batch</code> ← فایل‌ها ← <code>/done</code>.</li>
+        <li>سؤال از هوش مصنوعی: هر متنی بفرست یا <code>/ask سؤال</code>.</li>
+        <li>وضعیت و سقف‌های تو: <code>/me</code></li>
+      </ul>
+    </details>
+    <div class="note">تنظیمات، تامبنیل و صف تو کاملاً جداست و کاربران دیگه نمی‌بینن.</div>
+  </section>
+</main>
+<div class="bar"><button id="save">💾 ذخیره‌ی تنظیمات</button></div>
+<div id="toast"></div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dec = new TextDecoder();
+function b64uToBytes(s) { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); }
+const Q = new URLSearchParams(location.search);
+const readParam = k => { try { return JSON.parse(dec.decode(b64uToBytes(Q.get(k)))); } catch (e) { return null; } };
+const haptic = () => { try { tg && tg.HapticFeedback && tg.HapticFeedback.selectionChanged(); } catch (e) {} };
+let toastT;
+function toast(t, bad) { const el = $('#toast'); el.textContent = t; el.className = 'on' + (bad ? ' err' : ''); clearTimeout(toastT); toastT = setTimeout(() => el.className = '', 2600); }
+
+/* ---------- نام‌گذاری (همون منطق پنل اصلی) ---------- */
+const TOKRE = /\{(name|ext|n|date|time|size|res|filename)(?::(\d{1,2}))?\}/g;
+const renderTpl = (tpl, ctx) => tpl.replace(TOKRE, (m, k, p) => (k === 'n' && p) ? String(ctx.n).padStart(+p, '0') : String(ctx[k] ?? ''));
+const splitExt = n => { const m = /\.[A-Za-z0-9]{1,10}$/.exec(n); return m && m.index > 0 ? [n.slice(0, m.index), m[0]] : [n, '']; };
+const cleanStem = s => { s = s.replace(/(https?:\/\/\S+|t\.me\/\S+|www\.\S+|@\w+)/gi, ' ').replace(/[._]+/g, ' ').replace(/\s{2,}/g, ' ').trim(); return s.replace(/^[\s\-–—\[\]()]+|[\s\-–—\[\]()]+$/g, '') || s; };
+function previewName(tpl, clean, sample) {
+  const [stem, ext] = splitExt(sample), d = new Date(), p2 = x => String(x).padStart(2, '0');
+  const ctx = { name: clean ? cleanStem(stem) : stem, ext, n: 1, date: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`, time: `${p2(d.getHours())}-${p2(d.getMinutes())}`, size: '1.4GB', res: '1080p' };
+  let out = renderTpl(tpl, ctx).replace(/[\\/:*?"<>|\r\n\t]/g, '_').replace(/\s{2,}/g, ' ').trim();
+  if (ext && !tpl.includes('{ext}') && !out.toLowerCase().endsWith(ext.toLowerCase()) && !/\.[a-z0-9]{2,5}$/.test(out)) out += ext;
+  return out;
+}
+
+/* ---------- حالت و رابط ---------- */
+const MODES = [['auto', 'خودکار'], ['document', 'داکیومنت'], ['video', 'ویدیو'], ['audio', 'آهنگ']];
+const CAPS = [['keep', 'اصلی'], ['none', 'بدون کپشن'], ['custom', 'قالب سفارشی']];
+const TOKS = ['{name}', '{ext}', '{n}', '{n:3}', '{date}', '{time}', '{size}', '{res}'];
+const DEF = { pattern: '{name}{ext}', clean: false, autothumb: true, mode: 'auto', caption: 'keep', caption_tpl: '' };
+const cfg = { ...DEF, ...(readParam('s') || {}) };
+const LIM = readParam('lim');
+
+function seg(el, opts, cur, on) {
+  el.innerHTML = opts.map(([v, t]) => `<button data-v="${v}" class="${v === cur ? 'on' : ''}">${t}</button>`).join('');
+  $$('button', el).forEach(b => b.onclick = () => { $$('button', el).forEach(x => x.classList.toggle('on', x === b)); haptic(); on(b.dataset.v); });
+}
+function upd() {
+  cfg.pattern = $('#pat').value;
+  const fn = previewName(cfg.pattern || '{name}{ext}', cfg.clean, $('#sample').value || 'file.mkv');
+  $('#prevn').textContent = fn;
+  const custom = cfg.caption === 'custom';
+  $('#capt').style.display = custom ? '' : 'none'; $('#capprev').style.display = custom ? '' : 'none';
+  if (custom) {
+    const [st, ex] = splitExt(fn), d = new Date();
+    $('#capprev span').textContent = renderTpl($('#capt').value || '', { filename: fn, name: st, ext: ex, n: 1, date: d.toISOString().slice(0, 10), time: '12-00', size: '1.4GB', res: '1080p' });
+  }
+}
+$('#pat').value = cfg.pattern; $('#capt').value = cfg.caption_tpl || '';
+$('#toks').innerHTML = TOKS.map(t => `<button data-t="${t}">${t}</button>`).join('');
+$$('#toks button').forEach(b => b.onclick = () => {
+  const i = $('#pat'), s = i.selectionStart ?? i.value.length, e = i.selectionEnd ?? s;
+  i.value = i.value.slice(0, s) + b.dataset.t + i.value.slice(e); i.focus(); i.setSelectionRange(s + b.dataset.t.length, s + b.dataset.t.length); haptic(); upd();
+});
+['clean', 'autothumb'].forEach(k => {
+  const el = $('#' + k); el.classList.toggle('on', !!cfg[k]);
+  el.onclick = () => { cfg[k] = !cfg[k]; el.classList.toggle('on', cfg[k]); haptic(); upd(); };
+});
+seg($('#mode'), MODES, cfg.mode, v => { cfg.mode = v; upd(); });
+seg($('#cap'), CAPS, cfg.caption, v => { cfg.caption = v; upd(); });
+$('#pat').oninput = upd; $('#sample').oninput = upd; $('#capt').oninput = upd;
+
+if (LIM) {
+  const rows = [
+    ['📦 سقف حجم هر فایل / لینک', LIM.mb ? LIM.mb + ' مگابایت' : 'بدون سقف'],
+    ['💬 پیام هوش مصنوعی در روز', LIM.chat ? LIM.chat + ' پیام' : 'بدون سقف'],
+    ['🔗 ساخت لینک دانلود (Drive)', LIM.links ? 'فعال' : 'غیرفعال'],
+  ];
+  $('#lims').innerHTML = rows.map(([a, b]) => `<div class="lim"><span>${esc(a)}</span><span>${esc(b)}</span></div>`).join('');
+  $('#limcard').style.display = '';
+}
+
+$('#save').onclick = () => {
+  upd();
+  const body = { pattern: $('#pat').value.trim(), clean: !!cfg.clean, autothumb: !!cfg.autothumb, mode: cfg.mode, caption: cfg.caption, caption_tpl: $('#capt').value.trim() };
+  if (!body.pattern) return toast('الگوی نام خالیه', true);
+  if (tg && typeof tg.sendData === 'function' && tg.platform && tg.platform !== 'unknown') { tg.sendData(JSON.stringify(body)); }
+  else { $('#demo').classList.add('on'); toast('ذخیره فقط داخل تلگرام کار می‌کنه', true); }
+};
+if (!(tg && tg.platform && tg.platform !== 'unknown')) $('#demo').classList.add('on');
+upd();
+</script>
+</body>
+</html>
