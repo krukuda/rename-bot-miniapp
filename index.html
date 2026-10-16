@@ -106,6 +106,14 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
       <div class="row" style="margin-top:8px"><button class="pri grow" id="goUrl">دانلود و ارسال</button><button id="pasteUrl">📋 چسباندن</button></div>
       <div class="hint">فایل با تنظیمات تو (الگوی نام، تامبنیل، کپشن) توی همین چت با ربات فرستاده می‌شه. بزرگ‌تر از ۲ گیگ خودکار تقسیم می‌شه.</div>
     </div>
+    <div class="card" id="torcard" style="display:none">
+      <h2>🧲 تورنت (از طریق Real-Debrid)</h2>
+      <textarea id="magnet" class="mono" placeholder="magnet:?xt=urn:btih:…" rows="2"></textarea>
+      <div class="row" style="margin-top:8px"><button class="pri grow" id="goMagnet">افزودن تورنت</button><button id="pasteMagnet">📋 چسباندن</button></div>
+      <div id="tors"></div>
+      <div class="hint" id="torhint"></div>
+      <div class="hint">فایل‌ها روی سرور Real-Debrid دانلود می‌شن (نه روی Colab) و بعد با همون روش «دانلود از لینک» برات فرستاده می‌شن. فایل .torrent رو توی چت با کپشن <code>/torrent</code> بفرست.</div>
+    </div>
     <div class="card" id="acctcard" style="display:none"></div>
     <div class="card" id="grpcard" style="display:none"></div>
   </section>
@@ -534,8 +542,45 @@ window.setProv = p => act('provider', { p }, 'اولویت منبع عوض شد'
 window.nextModel = () => act('model_next', {}, 'در حال رفتن به مدل بعدی…');
 
 /* ---------------- رندر کلی ---------------- */
+/* ---------------- تورنت (Real-Debrid) ---------------- */
+const torSel = {};   // k -> Set(id فایل‌های انتخاب‌شده)
+const TSTAGE = { add: 'در حال گرفتن اطلاعات…', select: 'فایل‌ها رو انتخاب کن', dl: 'در حال دانلود روی سرور', fetch: 'در حال ارسال به تلگرام', done: '✅ تموم شد', err: '❌ ناموفق' };
+const torTotal = t => (t.files || []).filter(f => (torSel[t.k] || new Set()).has(f.id)).reduce((a, f) => a + f.b, 0);
+function renderTor() {
+  const T = S && S.tor, card = $('#torcard');
+  if (!T || !T.on) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  $('#torhint').textContent = [T.cap ? `سقف حجم کل: ${T.cap} مگابایت` : '', T.cap_n ? `${T.left} از ${T.cap_n} تورنت امروز باقی‌مانده` : ''].filter(Boolean).join(' • ');
+  $('#tors').innerHTML = (S.tors || []).map(t => {
+    if (t.stage === 'select' && !torSel[t.k]) torSel[t.k] = new Set((t.files || []).map(f => f.id));
+    const live = t.stage !== 'done' && t.stage !== 'err';
+    let body = `<div class="hint">${esc(TSTAGE[t.stage] || t.stage)}${t.stage === 'dl' ? ` — ${t.pct}%${t.spd ? ' • ' + fmtSize(t.spd) + '/s' : ''} • 🌱 ${t.seeders}` : ''}${t.stage === 'fetch' ? ` (${t.done}/${t.total})` : ''}${t.err ? ' — ' + esc(t.err) : ''}</div>`;
+    if (t.stage === 'dl') body += `<div class="bar"><i style="width:${Math.min(100, t.pct)}%"></i></div>`;
+    if (t.stage === 'select') {
+      body += (t.files || []).map(f => `<label class="item"><input type="checkbox" data-k="${esc(t.k)}" data-id="${f.id}" ${torSel[t.k].has(f.id) ? 'checked' : ''}><span class="nm">${esc(f.p)}</span><span class="sub">${fmtSize(f.b)}</span></label>`).join('');
+      if (t.nf > (t.files || []).length) body += `<div class="hint">فقط ${(t.files || []).length} فایل بزرگ‌تر از ${t.nf} فایل نمایش داده می‌شه.</div>`;
+      body += `<div class="row" style="margin-top:8px"><button class="pri grow" onclick="torGo('${esc(t.k)}')">▶️ شروع (${fmtSize(torTotal(t))})</button><button onclick="torAll('${esc(t.k)}')">🔘 همه/هیچ</button></div>`;
+    }
+    if (live) body += `<div class="row" style="margin-top:8px"><button class="sm bad" onclick="torCancel('${esc(t.k)}')">❌ لغو</button></div>`;
+    return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><div class="nm mono" style="font-weight:600">🧲 ${esc(t.name || 'تورنت')} ${t.size ? '<span class="sub">• ' + fmtSize(t.size) + '</span>' : ''}</div>${body}</div>`;
+  }).join('');
+  $$('#tors input[type=checkbox]').forEach(cb => cb.onchange = () => {
+    const s = torSel[cb.dataset.k] || (torSel[cb.dataset.k] = new Set());
+    cb.checked ? s.add(+cb.dataset.id) : s.delete(+cb.dataset.id); renderTor();
+  });
+}
+window.torGo = async k => { const ids = [...(torSel[k] || [])]; if (!ids.length) return toast('حداقل یک فایل انتخاب کن', true); await act('tor_go', { k, ids }, 'شروع شد'); };
+window.torCancel = async k => { if (confirm('این تورنت لغو بشه؟')) await act('tor_cancel', { k }, 'لغو شد'); };
+window.torAll = k => { const t = ((S && S.tors) || []).find(x => x.k === k); if (!t) return; const s = torSel[k]; torSel[k] = (s && s.size === t.files.length) ? new Set() : new Set(t.files.map(f => f.id)); renderTor(); };
+$('#goMagnet').onclick = async () => {
+  const magnet = $('#magnet').value.trim();
+  if (!/^magnet:\?/i.test(magnet)) return toast('لینک مگنت معتبر نیست (باید با magnet:? شروع بشه)', true);
+  if (await act('tor_add', { magnet }, 'تورنت اضافه شد')) $('#magnet').value = '';
+};
+$('#pasteMagnet').onclick = async () => { try { $('#magnet').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
+
 function renderAll() {
-  renderHome(); renderQueue(); renderLinks(); renderChat(); fillSettings(false); renderSettingsExtra();
+  renderTor(); renderHome(); renderQueue(); renderLinks(); renderChat(); fillSettings(false); renderSettingsExtra();
 }
 fillSettings(false); renderAll();
 boot();
