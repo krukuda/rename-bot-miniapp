@@ -108,14 +108,6 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
       <div class="row" style="margin-top:8px"><button class="pri grow" id="goUrl">دانلود و ارسال</button><button id="pasteUrl">📋 چسباندن</button></div>
       <div class="hint">فایل با تنظیمات تو (الگوی نام، تامبنیل، کپشن) توی همین چت با ربات فرستاده می‌شه. سقف حجم هر لینک بالا (در «سقف‌های تو») نوشته شده.</div>
     </div>
-    <div class="card" id="torcard" style="display:none">
-      <h2>🧲 تورنت (از طریق Real-Debrid)</h2>
-      <textarea id="magnet" class="mono" placeholder="magnet:?xt=urn:btih:…" rows="2"></textarea>
-      <div class="row" style="margin-top:8px"><button class="pri grow" id="goMagnet">افزودن تورنت</button><button id="pasteMagnet">📋 چسباندن</button></div>
-      <div id="tors"></div>
-      <div class="hint" id="torhint"></div>
-      <div class="hint">فایل‌ها روی سرور Real-Debrid دانلود می‌شن (نه روی Colab) و بعد با همون روش «دانلود از لینک» برات فرستاده می‌شن. فایل .torrent رو توی چت با کپشن <code>/torrent</code> بفرست.</div>
-    </div>
   </section>
 
   <!-- ============ صف ============ -->
@@ -176,6 +168,21 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
     </div>
   </section>
 
+  <!-- ============ تورنت ============ -->
+  <section id="p-tor" class="page">
+    <div class="card" id="torcard">
+      <h2>🧲 تورنت (BitTorrent)</h2>
+      <div id="tornote" class="hint" style="display:none;font-size:14px"></div>
+      <div id="torctl">
+        <textarea id="magnet" class="mono" placeholder="magnet:?xt=urn:btih:…" rows="2"></textarea>
+        <div class="row" style="margin-top:8px"><button class="pri grow" id="goMagnet">افزودن تورنت</button><button id="pasteMagnet">📋 چسباندن</button></div>
+      </div>
+      <div id="tors"></div>
+      <div class="hint" id="torhint"></div>
+      <div class="hint">دانلود با BitTorrent روی همین سرور انجام می‌شه (بعد از اتمام سید نمی‌کنه) و فایل‌ها با روش «دانلود از لینک» برات فرستاده می‌شن. فقط برای محتوای قانونی/آزاد. فایل .torrent رو توی چت با کپشن <code>/torrent</code> بفرست.</div>
+    </div>
+  </section>
+
   <!-- ============ چت ============ -->
   <section id="p-chat" class="page">
     <div class="card">
@@ -190,6 +197,7 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
   <button data-p="queue"><span>📥</span>صف<i class="n" id="qn_b" style="display:none"></i></button>
   <button data-p="set"><span>⚙️</span>تنظیمات</button>
   <button data-p="links" id="nav_links"><span>🔗</span>لینک‌ها</button>
+  <button data-p="tor"><span>🧲</span>تورنت<i class="n" id="tor_b" style="display:none"></i></button>
   <button data-p="chat"><span>💬</span>چت</button>
 </nav>
 <div id="toast"></div>
@@ -521,14 +529,20 @@ function renderNav() {
 }
 
 /* ---------------- رندر کلی ---------------- */
-/* ---------------- تورنت (Real-Debrid) ---------------- */
+/* ---------------- تورنت ---------------- */
 const torSel = {};   // k -> Set(id فایل‌های انتخاب‌شده)
-const TSTAGE = { add: 'در حال گرفتن اطلاعات…', select: 'فایل‌ها رو انتخاب کن', dl: 'در حال دانلود روی سرور', fetch: 'در حال ارسال به تلگرام', done: '✅ تموم شد', err: '❌ ناموفق' };
+const TSTAGE = { add: 'در حال گرفتن اطلاعات…', select: 'فایل‌ها رو انتخاب کن', dl: 'در حال دانلود', fetch: 'در حال ارسال به تلگرام', done: '✅ تموم شد', err: '❌ ناموفق' };
 const torTotal = t => (t.files || []).filter(f => (torSel[t.k] || new Set()).has(f.id)).reduce((a, f) => a + f.b, 0);
 function renderTor() {
-  const T = S && S.tor, card = $('#torcard');
-  if (!T || !T.on) { card.style.display = 'none'; return; }
-  card.style.display = '';
+  const T = S && S.tor, on = !!(T && T.on);
+  const nb = $('#tor_b'), live = on ? (S.tors || []).filter(t => t.stage !== 'done' && t.stage !== 'err').length : 0;
+  nb.style.display = live ? '' : 'none'; nb.textContent = live;
+  $('#torctl').style.display = on ? '' : 'none';
+  const note = $('#tornote'); note.style.display = on ? 'none' : '';
+  if (!on) {
+    note.textContent = !S ? 'منتظر ربات…' : (T && T.why === 'public' ? 'ادمین تورنت رو برای کاربران عمومی فعال نکرده.' : 'تورنت روی ربات خاموشه: توی سلول ۵ گزینه‌ی تورنت رو Y بزن و ربات رو دوباره اجرا کن.');
+    $('#tors').innerHTML = ''; $('#torhint').textContent = ''; return;
+  }
   $('#torhint').textContent = [T.cap ? `سقف حجم کل: ${T.cap} مگابایت` : '', T.cap_n ? `${T.left} از ${T.cap_n} تورنت امروز باقی‌مانده` : ''].filter(Boolean).join(' • ');
   $('#tors').innerHTML = (S.tors || []).map(t => {
     if (t.stage === 'select' && !torSel[t.k]) torSel[t.k] = new Set((t.files || []).map(f => f.id));
