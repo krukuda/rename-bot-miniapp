@@ -7,6 +7,73 @@
 <meta name="rename-bot-panel" content="2">
 <title>پنل کنترل ربات</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+/* ─── فال‌بک وقتی telegram.org از شبکه بسته باشه (فیلتر) ───
+   کلاینت تلگرام پارامترهای اجرا رو توی location.hash می‌ذاره (tgWebAppData / Version / Platform / ThemeParams) و پل بومی
+   window.TelegramWebviewProxy.postEvent مستقل از فایل JS رسمیه؛ اون فایل فقط یه لایه‌ی راحتیه. این بخش فقط وقتی فعال می‌شه
+   که Telegram.WebApp لود نشده باشه و همون چند API‌ای رو می‌سازه که مینی‌اپ استفاده می‌کنه. با لود موفق اسکریپت رسمی کاری نمی‌کنه. */
+(function () {
+  if (window.Telegram && window.Telegram.WebApp) return;
+  var P = {};
+  try { P = Object.fromEntries(new URLSearchParams(location.hash.replace(/^#/, ''))); } catch (e) {}
+  try {
+    if (P.tgWebAppPlatform || P.tgWebAppData || P.tgWebAppVersion) sessionStorage.setItem('__tgfb', JSON.stringify(P));
+    else P = JSON.parse(sessionStorage.getItem('__tgfb') || '{}');
+  } catch (e) {}
+  if (!P.tgWebAppPlatform && !P.tgWebAppData && !P.tgWebAppVersion && !window.TelegramWebviewProxy) return;  // داخل تلگرام نیستیم
+  var H = {}, theme = {};
+  try { theme = JSON.parse(P.tgWebAppThemeParams || '{}'); } catch (e) {}
+  function post(t, d) {
+    var s = JSON.stringify(d === undefined ? {} : d);
+    try {
+      if (window.TelegramWebviewProxy && window.TelegramWebviewProxy.postEvent) { window.TelegramWebviewProxy.postEvent(t, s); return true; }
+      if (window.external && 'notify' in window.external) { window.external.notify(JSON.stringify({ eventType: t, eventData: d || {} })); return true; }
+      if (window.parent && window.parent !== window) { window.parent.postMessage(JSON.stringify({ eventType: t, eventData: d || {} }), 'https://web.telegram.org'); return true; }
+    } catch (e) {}
+    return false;
+  }
+  function isDark() {
+    var c = String(theme.bg_color || '#ffffff').replace('#', ''); if (c.length === 3) c = c.replace(/./g, '$&$&');
+    var r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+  }
+  function applyTheme(tp) {
+    theme = tp || {};
+    for (var k in theme) document.documentElement.style.setProperty('--tg-theme-' + k.replace(/_/g, '-'), theme[k]);
+    if (window.Telegram) { window.Telegram.WebApp.themeParams = theme; window.Telegram.WebApp.colorScheme = isDark() ? 'dark' : 'light'; }
+  }
+  function recv(t, d) { if (t === 'theme_changed') applyTheme(d && d.theme_params); (H[t] || []).slice().forEach(function (f) { try { f(t, d); } catch (e) {} }); }
+  var iu = {}; try { iu = Object.fromEntries(new URLSearchParams(P.tgWebAppData || '')); if (iu.user) iu.user = JSON.parse(iu.user); } catch (e) {}
+  var WA = {
+    initData: P.tgWebAppData || '', initDataUnsafe: iu, version: P.tgWebAppVersion || '6.0', platform: P.tgWebAppPlatform || 'unknown',
+    themeParams: theme, colorScheme: 'light', isExpanded: true,
+    isVersionAtLeast: function () { return true; },
+    ready: function () { post('web_app_ready'); }, expand: function () { post('web_app_expand'); }, close: function () { post('web_app_close'); },
+    sendData: function (d) {
+      if (!d || !d.length || new TextEncoder().encode(d).length > 4096) throw Error('WebAppDataInvalid');
+      post('web_app_data_send', { data: d });
+    },
+    openLink: function (u) { if (!post('web_app_open_link', { url: u })) window.open(u, '_blank'); },
+    disableVerticalSwipes: function () { post('web_app_setup_swipe_behavior', { allow_vertical_swipe: false }); },
+    enableClosingConfirmation: function () { post('web_app_setup_closing_behavior', { need_confirmation: true }); },
+    disableClosingConfirmation: function () { post('web_app_setup_closing_behavior', { need_confirmation: false }); },
+    setHeaderColor: function () {}, setBackgroundColor: function () {},
+    onEvent: function (t, f) { t = { themeChanged: 'theme_changed', viewportChanged: 'viewport_changed' }[t] || t; (H[t] = H[t] || []).push(f); },
+    offEvent: function (t, f) { t = { themeChanged: 'theme_changed', viewportChanged: 'viewport_changed' }[t] || t; H[t] = (H[t] || []).filter(function (x) { return x !== f; }); },
+    HapticFeedback: {
+      impactOccurred: function (s) { post('web_app_trigger_haptic_feedback', { type: 'impact', impact_style: s || 'light' }); },
+      notificationOccurred: function (s) { post('web_app_trigger_haptic_feedback', { type: 'notification', notification_type: s || 'success' }); },
+      selectionChanged: function () { post('web_app_trigger_haptic_feedback', { type: 'selection_change' }); }
+    },
+    MainButton: { setParams: function () {}, onClick: function () {}, show: function () {}, hide: function () {}, enable: function () {}, disable: function () {}, setText: function () {} },
+    BackButton: { show: function () {}, hide: function () {}, onClick: function () {} }
+  };
+  window.Telegram = { WebApp: WA, WebView: { initParams: P, isIframe: false, receiveEvent: recv, postEvent: post }, __fallback: true };
+  window.TelegramGameProxy_receiveEvent = recv;
+  applyTheme(theme);
+  post('web_app_request_theme'); post('web_app_request_viewport');
+})();
+</script>
 <style>
 :root{
   --bg:var(--tg-theme-bg-color,#f5f6fa);
@@ -89,23 +156,6 @@ textarea{resize:vertical;min-height:84px}
 .code{font:700 26px/1.2 ui-monospace,Menlo,monospace;letter-spacing:4px;direction:ltr;text-align:center;padding:12px;background:var(--soft);border-radius:14px;margin:8px 0}
 .hint{color:var(--hint);font-size:12.5px;margin-top:8px}
 details summary{cursor:pointer;color:var(--hint);font-size:13px}
-
-/* ===== انکود / هاردساب ===== */
-.nav button{padding:4px 2px;font-size:10.5px}
-.nav button span{font-size:19px}
-.fld{display:block;margin:12px 0 6px;font-size:12.5px;color:var(--hint)}
-.fld b{color:var(--tx)}
-.sel{width:100%;font:inherit;color:var(--tx);background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:42px}
-.rng{width:100%;accent-color:var(--ac)}
-.swr{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.swc{width:34px;height:34px;border-radius:50%;border:3px solid transparent;padding:0;min-height:0;box-shadow:0 0 0 1px var(--line)}
-.swc.on{border-color:var(--ac)}
-.pvbox{position:relative;height:150px;border-radius:14px;overflow:hidden;margin-top:12px;
-  background:linear-gradient(135deg,#243b55,#141e30 55%,#3a1c71);display:flex;padding:0 10px}
-.pvbox::before{content:"پیش‌نمایش (تقریبی)";position:absolute;top:6px;inset-inline-start:10px;font-size:10px;color:rgba(255,255,255,.5)}
-.pvbox span{display:block;width:100%;text-align:center;align-self:flex-end;margin-bottom:14px;line-height:1.4}
-.pvbox.top span{align-self:flex-start;margin-top:22px;margin-bottom:0}
-.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);padding:8px 12px;border-radius:12px;font-size:13px;margin-top:10px}
 </style>
 </head>
 <body>
@@ -200,56 +250,6 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
     </div>
   </section>
 
-  <!-- ============ انکود / هاردساب ============ -->
-  <section id="p-enc" class="page">
-    <div class="card" id="e_note" style="display:none"></div>
-    <div id="e_body">
-      <div class="card">
-        <h2>🎞 انکود ویدیو</h2>
-        <div class="hint" id="e_q"></div>
-        <label class="fld">پروفایل آماده</label>
-        <div class="row wrap" id="e_prof"></div>
-        <label class="fld">کدک</label><div class="seg" id="e_codec"></div>
-        <label class="fld">رزولوشن (فقط کوچک‌کردن؛ بزرگ نمی‌شه)</label><div class="seg" id="e_res"></div>
-        <label class="fld">کیفیت CRF: <b id="e_crfv"></b> <span class="hint">(کمتر = بهتر و حجیم‌تر)</span></label>
-        <input type="range" class="rng" id="e_crf" min="16" max="32" step="1">
-        <label class="fld">سرعت انکود (کندتر = حجم کمتر / کیفیت بهتر)</label><select class="sel" id="e_preset"></select>
-        <label class="fld">صدا</label><div class="seg" id="e_abit"></div>
-        <label class="fld">زبان صدا</label><div class="seg" id="e_alang"></div>
-        <label class="fld">قالب خروجی</label><div class="seg" id="e_cont"></div>
-        <div class="hint" id="e_h265" style="display:none">برای H.265 ربات خودکار CRF را ۵ تا بالاتر می‌برد تا کیفیت هم‌ارز H.264 بماند.</div>
-      </div>
-      <div class="card">
-        <h2>🔤 هاردساب (زیرنویس چسبیده روی تصویر)</h2>
-        <div class="seg" id="e_sub"></div>
-        <div id="e_subauto" style="display:none"><label class="fld">زبان زیرنویس داخلی (اگه نبود: پیش‌فرض/اولین)</label><div class="seg" id="e_sublang"></div></div>
-        <div id="e_subext" style="display:none">
-          <label class="fld">فایل‌های زیرنویس (.srt / .ass / .ssa / .vtt)</label>
-          <div id="e_subs"></div>
-          <div class="row wrap" style="margin-top:8px"><button class="grow" id="e_subwait">📎 منتظر فایل زیرنویس باش</button><button class="sm bad" id="e_subclr">🗑 پاک‌کردن</button></div>
-          <div class="hint">بعد از زدن دکمه، فایل زیرنویس رو توی چت ربات بفرست. برای چند ویدیو، زیرنویس‌ها هم‌نام ویدیو باشن یا به همون ترتیب فرستاده بشن. فارسیِ Windows-1256 خودکار به UTF-8 تبدیل می‌شه.</div>
-        </div>
-        <div id="e_style" style="display:none">
-          <label class="fld">استایل زیرنویس <span class="hint">(برای زیرنویس ASS/SSA خودِ فایل حفظ می‌شه)</span></label>
-          <div class="seg" id="e_font"></div>
-          <label class="fld">اندازه: <b id="e_sizev"></b></label>
-          <input type="range" class="rng" id="e_size" min="12" max="64" step="1">
-          <label class="fld">رنگ</label><div class="swr" id="e_colors"></div>
-          <label class="fld">ضخامت حاشیه</label><div class="seg" id="e_outline"></div>
-          <label class="fld">موقعیت</label><div class="seg" id="e_pos"></div>
-          <div class="sw"><span>متن ضخیم (Bold)</span><button class="tg" id="e_bold"></button></div>
-          <div class="pvbox" id="e_pv"><span id="e_pvt">این یک نمونه زیرنویس فارسی است.</span></div>
-        </div>
-        <div class="warn" id="e_capw" style="display:none"></div>
-      </div>
-      <div class="card">
-        <div class="row wrap"><button class="pri grow" id="e_run">🎞 انکود صف</button><button class="grow" id="e_save">💾 ذخیره‌ی پیش‌فرض</button></div>
-        <div class="hint" id="e_hint"></div>
-        <div class="hint">انکود روی CPU سرور کنده و ممکنه از مدت ویدیو هم بیشتر طول بکشه؛ فقط یک انکود هم‌زمان اجرا می‌شه. زیرنویس نرمِ داخل فایل در MP4 حذف می‌شه (برای حفظش MKV بگیر).</div>
-      </div>
-    </div>
-  </section>
-
   <!-- ============ چت ============ -->
   <section id="p-chat" class="page">
     <div class="card">
@@ -266,7 +266,6 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
   <button data-p="set"><span>⚙️</span>تنظیمات</button>
   <button data-p="links"><span>🔗</span>لینک‌ها</button>
   <button data-p="tor"><span>🧲</span>تورنت<i class="n" id="tor_b" style="display:none"></i></button>
-  <button data-p="enc"><span>🎞</span>انکود</button>
   <button data-p="chat"><span>💬</span>چت</button>
 </nav>
 <div id="toast"></div>
@@ -322,20 +321,42 @@ let S = null, conn = 'connecting', lastRx = 0, nonce = 0, es = null, helloTries 
 let relayState = 'init', postFail = false, authErr = '';
 // وقتی مینی‌اپ از «دکمه‌ی کیبورد» باز بشه، تلگرام طبق مستندات initData رو خالی می‌ده (فقط menu button / دکمه‌ی اینلاین / لینک مستقیم می‌دن)
 const INIT_EMPTY = !!(tg && tg.platform && tg.platform !== 'unknown' && !tg.initData);
-const MSG_NOINIT = 'پنل از «دکمه‌ی کیبورد» باز شده و تلگرام در این حالت هویت (initData) نمی‌ده، برای همین ربات پیام‌های پنل رو رد می‌کنه. '
-  + 'پنل رو از دکمه‌ی «🎛 باز کردن پنل» زیر پیام /app یا از دکمه‌ی منوی «🎛 پنل» کنار فیلد پیام باز کن. (ذخیره‌ی ساده‌ی تنظیمات همچنان ممکنه.)';
+const MSG_NOINIT = 'پنل از «دکمه‌ی کیبورد» باز شده؛ تلگرام در این حالت هویت (initData) نمی‌ده، پس پنل زنده کار نمی‌کنه. '
+  + 'این حالت «بدون رله» است: ذخیره‌ی تنظیمات و «دانلود از لینک» از مسیر خود تلگرام انجام می‌شه و نتیجه توی چت می‌آد. '
+  + 'برای پنل زنده از دکمه‌ی «🎛 باز کردن پنل» زیر پیام /app یا دکمه‌ی منوی «🎛 پنل» باز کن.';
 const ERR_TEXT = {
   noinit: MSG_NOINIT,
   expired: 'نشست پنل بیش از ۲۴ ساعت پیش باز شده و منقضی شده؛ پنل رو ببند و دوباره باز کن.',
   bad: 'تلگرام هویت معتبری برای پنل نداد؛ پنل رو از دکمه‌ی زیر پیام /app یا منوی «🎛 پنل» باز کن. اگه حل نشد، توی ربات «/app reset» بزن.',
 };
+let relayReach = null;  // null = در حال بررسی ، true/false
+async function probeRelay() {
+  relayReach = null;
+  try {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 7000);
+    await fetch(RELAY + '/v1/health', { mode: 'no-cors', cache: 'no-store', signal: ctl.signal });  // no-cors: فقط «رسیدن» مهمه
+    clearTimeout(t); relayReach = true;
+  } catch (e) { relayReach = false; }
+  if (conn === 'offline') setConn('offline');  // بنر با نتیجه‌ی تازه بازسازی می‌شه
+}
+const relayHost = () => RELAY.replace(/^https?:\/\//, '');
+function diagHtml() {
+  const FB = !!(window.Telegram && window.Telegram.__fallback);
+  const row = (icon, t) => `<div>${icon} ${esc(t)}</div>`;
+  return '<div style="margin-top:6px;font-size:12.5px;line-height:1.7">'
+    + row('✅', 'صفحه‌ی مینی‌اپ باز شد')
+    + (FB ? row('⚠️', 'telegram.org بسته بود؛ حالت داخلی فعاله (مشکلی نیست)') : row('✅', 'اسکریپت تلگرام (telegram.org)'))
+    + (relayReach === null ? row('⏳', 'بررسی رله…') : relayReach ? row('✅', 'رله در دسترسه (' + relayHost() + ')') : row('❌', 'رله از این شبکه بسته‌ست (' + relayHost() + ')'))
+    + '</div>';
+}
 function offlineHtml() {
   let why, canRetry = true;
   if (INIT_EMPTY) { why = MSG_NOINIT; canRetry = false; }
   else if (authErr) why = authErr;
-  else if (relayState === 'error' || postFail) why = 'رله‌ی ' + RELAY.replace(/^https?:\/\//, '') + ' از این شبکه در دسترس نیست (اینترنت قطع، فیلتر یا نیاز به VPN؟). ربات ممکنه روشن باشه ولی پیام‌ها بهش نمی‌رسه.';
+  else if (relayReach === false || relayState === 'error' || postFail) why = 'رله‌ی ' + relayHost() + ' از این شبکه در دسترس نیست (فیلتر/قطعی؛ بدون VPN معمولاً همین‌طوره). ربات ممکنه روشن باشه ولی پیام‌ها بهش نمی‌رسه. '
+    + 'راه بدون رله: پنل رو از کیبورد «📴 حالت بدون رله» (زیر پیام /app) باز کن تا تنظیمات و دانلود از لینک از مسیر خود تلگرام برن.';
   else why = 'ربات جواب نمی‌ده (خاموشه یا هنوز بالا نیومده). رله در دسترسه.';
-  return esc(why) + ' ' + (canRetry ? '<button class="sm" onclick="retry()">تلاش مجدد</button>' : '');
+  return esc(why) + ' ' + (canRetry ? '<button class="sm" onclick="retry()">تلاش مجدد</button>' : '') + diagHtml();
 }
 const pending = new Map();
 
@@ -344,7 +365,7 @@ function setConn(c) {
   const el = $('#chip'); el.className = 'chip ' + (c === 'live' ? 'live' : c === 'offline' ? 'off' : '');
   $('#chipt').textContent = c === 'live' ? 'زنده' : c === 'offline' ? 'آفلاین' : 'در حال اتصال…';
   const b = $('#banner');
-  if (c === 'offline') { b.className = 'banner on'; b.innerHTML = '<b>ارتباط زنده برقرار نیست.</b> ' + offlineHtml(); }
+  if (c === 'offline') { b.className = 'banner on'; b.innerHTML = (INIT_EMPTY ? '<b>حالت بدون رله.</b> ' : '<b>ارتباط زنده برقرار نیست.</b> ') + offlineHtml(); }
   else b.className = 'banner';
 }
 async function send(obj) {
@@ -356,7 +377,18 @@ async function send(obj) {
   if (!r.ok) { postFail = true; throw new Error('رله ' + r.status); }
   postFail = false;
 }
+const NATIVE_CMDS = new Set(['get_url']);  // حالت بدون رله: فرمان‌هایی که با sendData (کانال خود تلگرام) می‌رن
+function nativeCall(c, d) {
+  const data = JSON.stringify({ v: 2, c, d: d || {} });
+  if (new TextEncoder().encode(data).length > 4000) return Promise.reject(new Error('درخواست بزرگه؛ لینک کمتری بفرست'));
+  try { tg.sendData(data); } catch (e) { return Promise.reject(new Error('ارسال به ربات ممکن نشد')); }
+  return Promise.resolve({ n: ((d && d.urls) || []).length, native: true });
+}
 function call(c, d, timeout = 25000) {
+  if (INIT_EMPTY) {  // دکمه‌ی کیبورد: رله‌ی زنده معنی نداره
+    if (NATIVE_CMDS.has(c)) return nativeCall(c, d);
+    return Promise.reject(new Error('این کار توی حالت بدون رله ممکن نیست؛ توی خود چت ربات انجامش بده یا پنل زنده رو از دکمه‌ی اینلاین باز کن'));
+  }
   return new Promise((res, rej) => {
     const r = Math.random().toString(36).slice(2, 8);
     const t = setTimeout(() => { pending.delete(r); rej(new Error('ربات جواب نداد')); }, timeout);
@@ -387,12 +419,13 @@ function openStream() {
   };
 }
 function hello() { send({ c: 'hello', r: 'h' + Date.now() }).catch(() => {}); }
-function retry() { authErr = ''; postFail = false; setConn('connecting'); helloTries = 0; openStream(); }
+function retry() { authErr = ''; postFail = false; probeRelay(); setConn('connecting'); helloTries = 0; openStream(); }
 window.retry = retry;
 async function boot() {
   if (!TID || !KEYB) { setConn('offline'); $('#banner').innerHTML = 'لینک پنل ناقصه؛ توی ربات دوباره /app بزن و از همون دکمه باز کن.'; renderAll(); return; }
   try { KEY = await crypto.subtle.importKey('raw', b64uToBytes(KEYB), 'AES-GCM', false, ['encrypt', 'decrypt']); }
   catch (e) { setConn('offline'); return; }
+  probeRelay();
   if (INIT_EMPTY) { setConn('offline'); renderAll(); return; }  // بی‌فایده‌ست؛ ربات بدون initData فریم‌ها رو رد می‌کنه
   openStream();
   setInterval(() => {
@@ -443,13 +476,13 @@ function renderHome() {
   const j = S.job, jc = $('#jobcard');
   if (j) {
     const pct = j.tot ? Math.min(100, j.cur * 100 / j.tot) : 0;
-    const act = { send: 'تغییر نام و ارسال', link: 'ساخت لینک', shots: 'شیت فریم', enc: 'انکود / هاردساب' }[j.act] || 'کار';
+    const act = { send: 'تغییر نام و ارسال', link: 'ساخت لینک', shots: 'شیت فریم' }[j.act] || 'کار';
     jc.style.display = '';
     jc.innerHTML = `<h2>⚡ در حال اجرا — ${act}${j.n > 1 ? ` (${j.i}/${j.n})` : ''}</h2>
       <div class="item" style="padding:0"><div class="nm">${esc(j.name || '')}</div></div>
       <div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div>
       <div class="row"><span class="grow">${esc(j.label || '…')}</span><b>${j.tot ? pct.toFixed(1) + '%' : ''}</b></div>
-      <div class="hint">${j.unit === 's' ? `${fmtDur(j.cur)} / ${fmtDur(j.tot)} ${j.x ? `• ⚡ ${j.x}×` : ''}` : `${j.tot ? `${fmtSize(j.cur)} / ${fmtSize(j.tot)}` : ''} ${j.spd ? `• 🚀 ${fmtSize(j.spd)}/s` : ''}`} ${j.eta ? `• ⏱ ${fmtDur(j.eta)}` : ''}</div>
+      <div class="hint">${j.tot ? `${fmtSize(j.cur)} / ${fmtSize(j.tot)}` : ''} ${j.spd ? `• 🚀 ${fmtSize(j.spd)}/s` : ''} ${j.eta ? `• ⏱ ${fmtDur(j.eta)}` : ''}</div>
       <div class="row" style="margin-top:8px"><button class="bad" onclick="stopJob()">⛔ توقف</button></div>`;
   } else jc.style.display = 'none';
 
@@ -493,7 +526,7 @@ $('#goUrl').onclick = async () => {
   const urls = $('#urls').value.split(/\s+/).filter(x => /^https?:\/\//i.test(x));
   if (!urls.length) return toast('لینک معتبری نیست', true);
   const r = await act('get_url', { urls }, null);
-  if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#urls').value = ''; }
+  if (r) { toast(r.native ? 'برای ربات فرستاده شد؛ وضعیت و فایل توی چت می‌آد' : `${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#urls').value = ''; }
 };
 $('#pasteUrl').onclick = async () => { try { $('#urls').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
@@ -561,7 +594,8 @@ $('#save').onclick = async () => {
   const body = { pattern: $('#pat').value.trim(), clean: !!cfg.clean, autothumb: !!cfg.autothumb, mode: cfg.mode, caption: cfg.caption, caption_tpl: $('#capt').value.trim() };
   if (!body.pattern) return toast('الگوی نام خالیه', true);
   if (conn === 'live') { if (await act('set_cfg', body, '✅ تنظیمات ذخیره شد')) { setDirty = false; } }
-  else if (tg) { tg.sendData(JSON.stringify(body)); }   // حالت آفلاین (روش قدیمی؛ مینی‌اپ بسته می‌شه)
+  else if (tg && INIT_EMPTY) { tg.sendData(JSON.stringify(body)); }   // حالت بدون رله (کیبوردی؛ مینی‌اپ بسته می‌شه)
+  else if (tg) toast('رله وصل نیست؛ برای ذخیره‌ی بدون رله پنل رو از کیبورد «📴 حالت بدون رله» (زیر پیام /app) باز کن', true);
   else toast('اتصال با ربات نیست', true);
 };
 function renderSettingsExtra() {
@@ -661,96 +695,8 @@ $('#goMagnet').onclick = async () => {
 };
 $('#pasteMagnet').onclick = async () => { try { $('#magnet').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
-/* ---------------- انکود / هاردساب ---------------- */
-const ENC_DEF = { codec: 'h264', crf: 23, preset: 'veryfast', res: 'orig', abit: 128, cont: 'mp4', sub: 'none', sublang: 'fa', alang: 'first', font: 'Vazirmatn', size: 24, color: '#FFFFFF', outline: 2, pos: 'bottom', bold: false };
-const ENC_PROF = {
-  lite: ['📱 سبک (۷۲۰p کم‌حجم)', { codec: 'h264', crf: 27, preset: 'veryfast', res: '720', abit: 96 }],
-  mid: ['⚖️ متعادل (۱۰۸۰p)', { codec: 'h264', crf: 23, preset: 'veryfast', res: '1080', abit: 128 }],
-  hq: ['💎 کیفیت (H.265)', { codec: 'h265', crf: 22, preset: 'medium', res: 'orig', abit: 192 }],
-};
-const ENC_COLORS = ['#FFFFFF', '#FFEB3B', '#00E5FF', '#B2FF59', '#FF9800'];
-const ENC_FONTS = ['Vazirmatn', 'DejaVu Sans', 'Noto Sans Arabic'];
-let E = null, encDirty = false, encBuilt = false;
-function encTouch() { encDirty = true; renderEncDyn(); }
-function fillEnc(force) {
-  const c = S && S.enc && S.enc.cfg; if (!c) return;
-  if (E && encDirty && !force) return;
-  E = { ...ENC_DEF, ...c }; encDirty = false; buildEnc();
-}
-function buildEnc() {
-  const set = (k, v, num) => { E[k] = num ? +v : v; encTouch(); };
-  $('#e_prof').innerHTML = Object.entries(ENC_PROF).map(([k, [t]]) => `<button class="sm" data-k="${k}">${t}</button>`).join('');
-  $$('#e_prof button').forEach(b => b.onclick = () => { Object.assign(E, ENC_PROF[b.dataset.k][1]); haptic(); buildEnc(); encDirty = true; renderEncDyn(); });
-  const caps = (S && S.enc && S.enc.caps) || {};
-  seg($('#e_codec'), [['h264', 'H.264'], ['h265', 'H.265']].filter(([v]) => v === 'h264' ? caps.x264 !== false : caps.x265 !== false), E.codec, v => set('codec', v));
-  seg($('#e_res'), [['orig', 'اصلی'], ['1080', '1080p'], ['720', '720p'], ['480', '480p'], ['360', '360p']], E.res, v => set('res', v));
-  seg($('#e_abit'), [[0, 'کپی'], [64, '64k'], [96, '96k'], [128, '128k'], [192, '192k']], E.abit, v => set('abit', v, true));
-  seg($('#e_alang'), [['first', 'اولین'], ['fa', 'فارسی'], ['en', 'انگلیسی'], ['ja', 'ژاپنی']], E.alang, v => set('alang', v));
-  seg($('#e_cont'), [['mp4', 'MP4'], ['mkv', 'MKV']], E.cont, v => set('cont', v));
-  $('#e_preset').innerHTML = ['ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow'].map(p => `<option value="${p}">${p}</option>`).join('');
-  $('#e_preset').value = E.preset; $('#e_preset').onchange = e => set('preset', e.target.value);
-  $('#e_crf').value = E.crf; $('#e_crf').oninput = e => set('crf', e.target.value, true);
-  seg($('#e_sub'), [['none', 'بدون زیرنویس'], ['auto', 'داخلی (خودکار)'], ['ext', 'فایل خارجی']], E.sub, v => set('sub', v));
-  seg($('#e_sublang'), [['fa', 'فارسی'], ['en', 'انگلیسی'], ['ar', 'عربی'], ['first', 'اولین']], E.sublang, v => set('sublang', v));
-  seg($('#e_font'), ENC_FONTS.map(f => [f, f]), E.font, v => set('font', v));
-  $('#e_size').value = E.size; $('#e_size').oninput = e => set('size', e.target.value, true);
-  $('#e_colors').innerHTML = ENC_COLORS.map(c => `<button class="swc ${c === E.color ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('');
-  $$('#e_colors button').forEach(b => b.onclick = () => { $$('#e_colors button').forEach(x => x.classList.toggle('on', x === b)); haptic(); set('color', b.dataset.c); });
-  seg($('#e_outline'), [0, 1, 2, 3, 4].map(x => [x, x]), E.outline, v => set('outline', v, true));
-  seg($('#e_pos'), [['bottom', 'پایین'], ['top', 'بالا']], E.pos, v => set('pos', v));
-  $('#e_bold').classList.toggle('on', !!E.bold);
-  encBuilt = true; renderEncDyn();
-}
-$('#e_bold').onclick = e => { if (!E) return; E.bold = !E.bold; e.currentTarget.classList.toggle('on', E.bold); haptic(); encTouch(); };
-function renderEncDyn() {
-  if (!E) return;
-  $('#e_crfv').textContent = E.crf; $('#e_sizev').textContent = E.size;
-  $('#e_h265').style.display = E.codec === 'h265' ? '' : 'none';
-  $('#e_subauto').style.display = E.sub === 'auto' ? '' : 'none';
-  $('#e_subext').style.display = E.sub === 'ext' ? '' : 'none';
-  $('#e_style').style.display = E.sub !== 'none' ? '' : 'none';
-  $('#e_run').textContent = E.sub !== 'none' ? '🔤 هاردساب + انکود صف' : '🎞 انکود صف';
-  const pv = $('#e_pv'), t = $('#e_pvt');
-  pv.classList.toggle('top', E.pos === 'top');
-  const px = Math.max(8, E.size * 150 / 288 * 1.15);
-  t.style.cssText = `font-family:'${E.font}',Vazirmatn,sans-serif;font-size:${px}px;color:${E.color};font-weight:${E.bold ? 700 : 400};` +
-    `-webkit-text-stroke:${E.outline * 2}px #000;paint-order:stroke fill;`;
-}
-function renderEnc() {
-  const N = S && S.enc, on = !!(N && N.on);
-  $('#e_note').style.display = on ? 'none' : ''; $('#e_body').style.display = on ? '' : 'none';
-  if (!on) {
-    const why = N && N.why;
-    $('#e_note').innerHTML = !S ? 'منتظر ربات…' : why === 'public' ? 'ادمین انکود رو برای کاربران عمومی فعال نکرده.' : why === 'caps' ? 'ffmpeg این سرور کدک لازم (x264/x265) رو نداره.' : 'انکود روی ربات خاموشه (ENCODE_ENABLED=0).';
-    return;
-  }
-  fillEnc(false);
-  const q = (S.q || []), vids = q.filter(it => it.k === 'video' || /\.(mkv|mp4|avi|mov|webm|m4v|ts|wmv|flv|mpg|mpeg|3gp)$/i.test(it.name || '')).length;
-  const sess = S.sess, busy = !!(sess && sess.busy);
-  $('#e_q').innerHTML = q.length ? `📥 ${q.length} فایل توی صفه (${vids} ویدیو). همه با تنظیمات پایین انکود می‌شن.` : 'صف خالیه؛ اول ویدیو رو برای ربات بفرست (یا /batch برای چند فایل).';
-  $('#e_run').disabled = !vids || busy;
-  const subs = (sess && sess.subs) || [];
-  $('#e_subs').innerHTML = subs.length ? subs.map(n => `<div class="item"><span>📄</span><div class="nm">${esc(n)}</div></div>`).join('') : '<div class="hint">هنوز زیرنویسی نفرستادی.</div>';
-  $('#e_subwait').textContent = sess && sess.subwait ? '⏳ منتظر فایل زیرنویس توی چت…' : '📎 منتظر فایل زیرنویس باش';
-  $('#e_subwait').disabled = !(sess && !busy);
-  const w = []; const caps = N.caps || {};
-  if (caps.ass === false) w.push('ffmpeg این سرور libass نداره؛ هاردساب کار نمی‌کنه.');
-  if (caps.x265 === false) w.push('H.265 روی این سرور نیست.');
-  $('#e_capw').style.display = w.length ? '' : 'none'; $('#e_capw').textContent = w.join(' ');
-  $('#e_hint').textContent = [N.cap_min ? `سقف مدت هر ویدیو: ${N.cap_min} دقیقه` : '', N.cap_n ? `${N.left} از ${N.cap_n} انکود امروز باقی‌مانده` : ''].filter(Boolean).join(' • ');
-}
-$('#e_run').onclick = async () => {
-  if (!E) return;
-  if (E.sub === 'ext' && !(((S && S.sess && S.sess.subs) || []).length)) return toast('اول فایل زیرنویس رو توی چت برای ربات بفرست', true);
-  const r = await act('queue_run', { action: 'enc', enc: { ...E } }, 'شروع شد — پیشرفت رو توی خانه ببین');
-  if (r) go('home');
-};
-$('#e_save').onclick = async () => { if (E && await act('enc_cfg', { ...E }, '✅ به‌عنوان پیش‌فرض ذخیره شد')) encDirty = false; };
-$('#e_subwait').onclick = async () => { await act('enc_sub_wait', {}, 'منتظرم؛ فایل زیرنویس رو توی چت بفرست'); };
-$('#e_subclr').onclick = async () => { await act('enc_sub_clear', {}, 'زیرنویس‌ها پاک شد'); };
-
 function renderAll() {
-  renderEnc(); renderTor(); renderHome(); renderQueue(); renderLinks(); renderChat(); fillSettings(false); renderSettingsExtra();
+  renderTor(); renderHome(); renderQueue(); renderLinks(); renderChat(); fillSettings(false); renderSettingsExtra();
 }
 fillSettings(false); renderAll();
 boot();
