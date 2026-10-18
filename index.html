@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="color-scheme" content="light dark">
 <meta name="rename-bot-panel" content="2">
-<title>پنل کنترل ربات</title>
+<title>Téleios</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{
@@ -106,15 +106,83 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
 .pvbox span{display:block;width:100%;text-align:center;align-self:flex-end;margin-bottom:14px;line-height:1.4}
 .pvbox.top span{align-self:flex-start;margin-top:22px;margin-bottom:0}
 .warn{background:color-mix(in srgb,var(--warn) 18%,transparent);padding:8px 12px;border-radius:12px;font-size:13px;margin-top:10px}
+
+/* ======================= Téleios UI layer ======================= */
+html[data-tl-theme="light"]{--bg:#f5f6fa;--card:#fff;--tx:#14161a;--hint:#7b8190;color-scheme:light}
+html[data-tl-theme="dark"]{--bg:#0e1116;--card:#171b22;--tx:#eef0f4;--hint:#8b93a3;color-scheme:dark}
+html[data-tl-radius="sharp"]{--r:8px}html[data-tl-radius="sharp"] button,html[data-tl-radius="sharp"] input,html[data-tl-radius="sharp"] select,html[data-tl-radius="sharp"] textarea{border-radius:8px}
+html[data-tl-radius="round"]{--r:26px}html[data-tl-radius="round"] button,html[data-tl-radius="round"] input,html[data-tl-radius="round"] select,html[data-tl-radius="round"] textarea{border-radius:18px}
+html[data-tl-font="s"] main{zoom:.92}html[data-tl-font="l"] main{zoom:1.1}
+html[data-tl-dens="compact"] .card{padding:10px 12px;margin-bottom:8px}html[data-tl-dens="compact"] .item{padding:6px 0}
+.tl-noanim *,.tl-noanim *::before,.tl-noanim *::after{animation:none!important;transition:none!important}
+html[dir="ltr"] .b.me{align-self:flex-end;border-end-start-radius:16px;border-end-end-radius:4px}
+html[dir="ltr"] .b.bot{align-self:flex-start;border-end-end-radius:16px;border-end-start-radius:4px}
+
+/* پس‌زمینه‌ی افکت‌ها (برای شیشه‌ای دیده بشه باید پشتش رنگ باشه) */
+#tlBg{position:fixed;inset:0;z-index:-1;pointer-events:none;display:none;overflow:hidden}
+html.tl-fx #tlBg{display:block}html.tl-fx body{background:transparent}
+html.tl-glass #tlBg,html[data-tl-bg="gradient"] #tlBg{background:
+  radial-gradient(900px 520px at 88% -8%,color-mix(in srgb,var(--ac) 40%,transparent),transparent 62%),
+  radial-gradient(760px 520px at -10% 42%,color-mix(in srgb,#8b5cf6 30%,transparent),transparent 62%),
+  radial-gradient(700px 480px at 70% 108%,color-mix(in srgb,#06b6d4 24%,transparent),transparent 60%)}
+html[data-tl-bg="gradient"] #tlBg{background:linear-gradient(160deg,color-mix(in srgb,var(--ac) 26%,var(--bg)),var(--bg) 46%,color-mix(in srgb,#8b5cf6 22%,var(--bg)))}
+html[data-tl-bg="aurora"] #tlBg::before,html[data-tl-bg="aurora"] #tlBg::after{content:"";position:absolute;width:75vmax;height:75vmax;border-radius:50%;filter:blur(70px);opacity:.55;animation:tl-aur 20s ease-in-out infinite alternate}
+html[data-tl-bg="aurora"] #tlBg::before{background:var(--ac);top:-30vmax;inset-inline-start:-20vmax}
+html[data-tl-bg="aurora"] #tlBg::after{background:#8b5cf6;bottom:-34vmax;inset-inline-end:-24vmax;animation-delay:-9s}
+@keyframes tl-aur{from{transform:translate(0,0) scale(1)}to{transform:translate(8vmax,6vmax) scale(1.15)}}
+
+/* شیشه‌ای */
+html.tl-glass .card,html.tl-glass .tl-card{background:color-mix(in srgb,var(--card) 55%,transparent)!important;-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);border:1px solid color-mix(in srgb,#fff 24%,transparent);box-shadow:0 8px 28px rgba(0,0,0,.10)}
+html.tl-glass .nav,html.tl-glass[data-tl-head="default"] .top,html.tl-glass[data-tl-head="glass"] .top,html[data-tl-head="glass"] .top{background:color-mix(in srgb,var(--bg) 42%,transparent)!important;-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%)}
+html.tl-glass .stat,html.tl-glass .prev{background:color-mix(in srgb,var(--ac) 10%,transparent)}
+
+/* هدر رنگی */
+.top{background:var(--tl-head-bg,color-mix(in srgb,var(--bg) 82%,transparent));color:var(--tl-head-fg,inherit)}
+html[data-tl-head="accent"] .top,html[data-tl-head="gradient"] .top,html[data-tl-head="custom"] .top{-webkit-backdrop-filter:none;backdrop-filter:none}
+html[data-tl-head="accent"] .top .chip,html[data-tl-head="gradient"] .top .chip,html[data-tl-head="custom"] .top .chip{background:rgba(255,255,255,.22);color:inherit}
+.tl-brand{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:.2px}
+.tl-brand svg{flex:none}.tl-brand small{font-weight:500;font-size:11.5px;opacity:.72;margin-inline-start:2px;white-space:nowrap}
+.tl-hav{width:34px;height:34px;min-height:0;padding:0;border-radius:50%;flex:none;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,hsl(var(--tl-h,215) 75% 55%),hsl(calc(var(--tl-h,215) + 50) 75% 50%));color:#fff;font-weight:700;box-shadow:0 0 0 2px color-mix(in srgb,var(--ac) 55%,transparent)}
+.tl-hav img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* کارت پروفایل */
+.tl-hero{position:relative;overflow:hidden;padding:0!important;border-radius:calc(var(--r) + 4px);color:#fff;border:0;background:linear-gradient(135deg,var(--ac),color-mix(in srgb,var(--ac) 42%,#7c3aed 58%) 58%,color-mix(in srgb,var(--ac) 28%,#0ea5e9 72%))}
+html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 78%,transparent),color-mix(in srgb,#7c3aed 62%,transparent))!important}
+.tl-hero::before{content:"";position:absolute;width:280px;height:280px;border-radius:50%;inset-block-start:-120px;inset-inline-end:-80px;background:radial-gradient(circle,rgba(255,255,255,.34),transparent 66%)}
+.tl-hero::after{content:"τ";position:absolute;inset-inline-end:14px;bottom:-34px;font:700 132px/1 Georgia,"Times New Roman",serif;opacity:.11;pointer-events:none}
+.tl-hero-in{position:relative;display:flex;align-items:center;gap:14px;padding:18px 16px 10px}
+.tl-ava{position:relative;width:76px;height:76px;flex:none;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,hsl(var(--tl-h,215) 75% 55%),hsl(calc(var(--tl-h,215) + 50) 75% 50%));font-size:30px;font-weight:700}
+.tl-ava img{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);border-radius:50%;object-fit:cover;background:#222}
+.tl-ava .tl-ring{position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,#fff,rgba(255,255,255,.1),#fff);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));animation:tl-spin 6s linear infinite}
+@keyframes tl-spin{to{transform:rotate(360deg)}}
+.tl-info{min-width:0;flex:1}.tl-greet{font-size:12px;opacity:.85}
+.tl-nm{font-size:21px;font-weight:800;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-un{font-size:13px;opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-pills{position:relative;display:flex;flex-wrap:wrap;gap:8px;padding:6px 16px 12px}
+.tl-pill{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:4px 11px;border-radius:99px;font-size:12.5px;color:#fff;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.18);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.tl-pill code{font:600 13px ui-monospace,Menlo,monospace;direction:ltr;letter-spacing:.3px}.tl-pill small{opacity:.8;font-size:11px}
+.tl-foot{position:relative;display:flex;justify-content:space-between;gap:8px;padding:8px 16px;font-size:11.5px;background:rgba(0,0,0,.18);letter-spacing:.3px}
+.tl-foot span:last-child{direction:ltr;opacity:.85}
+
+/* کارت ظاهر */
+.tl-app h2{justify-content:space-between}
+.tl-sws{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0 2px}
+.tl-sw{width:32px;height:32px;min-height:0;padding:0;border-radius:50%;border:3px solid transparent;box-shadow:0 0 0 1px var(--line)}
+.tl-sw.on{border-color:var(--tx)}.tl-sw.auto{background:conic-gradient(#3b82f6,#8b5cf6,#ec4899,#f97316,#10b981,#3b82f6)}
+.tl-app input[type=color]{width:38px;height:32px;min-height:0;padding:0;border:0;background:none}
+.tl-app .tl-lbl{display:block;margin:12px 0 6px;font-size:12.5px;color:var(--hint)}
+.tl-chips{display:flex;flex-wrap:wrap;gap:8px}.tl-chips button{font-size:13px;min-height:34px;padding:6px 12px}
+.tl-app details{margin-top:10px}.tl-app summary{padding:6px 0}
 </style>
 </head>
 <body>
-<div class="top"><h1>🎛 پنل ربات</h1><span id="chip" class="chip"><i class="dot"></i><span id="chipt">در حال اتصال…</span></span></div>
+<div class="top"><button class="tl-hav" id="tlHav" type="button" data-tl-own aria-label="profile"><img id="tlHavImg" alt="" hidden><span id="tlHavTxt">T</span></button><h1 class="tl-brand" data-tl-own><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><defs><linearGradient id="tlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--ac)"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><circle cx="16" cy="16" r="13.5" fill="none" stroke="url(#tlg)" stroke-width="2.6"/><path d="M9.5 11.5h13M16 11.5v11" stroke="url(#tlg)" stroke-width="3" stroke-linecap="round" fill="none"/></svg><span>Téleios</span><small id="tlSub"></small></h1><span id="chip" class="chip"><i class="dot"></i><span id="chipt">در حال اتصال…</span></span></div>
 <main>
   <div id="banner" class="banner"></div>
 
   <!-- ============ خانه ============ -->
   <section id="p-home" class="page on">
+    <div class="card tl-hero" id="tlHero" data-tl-own></div>
     <div class="card" id="jobcard" style="display:none"></div>
     <div class="card"><h2>📊 وضعیت</h2><div class="grid" id="stats"></div></div>
     <div class="card">
@@ -152,6 +220,7 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
 
   <!-- ============ تنظیمات ============ -->
   <section id="p-set" class="page">
+    <div class="card tl-app" id="tlApp" data-tl-own></div>
     <div class="card">
       <h2>🧩 الگوی نام</h2>
       <input type="text" id="pat" class="mono" spellcheck="false">
@@ -374,6 +443,7 @@ function onMsg(o) {
   else if (o.t === 'err') { authErr = ERR_TEXT[o.code] || ERR_TEXT.bad; if (conn !== 'live') setConn('offline'); }
   else if (o.t === 'ack') { const p = pending.get(o.r); if (p) { clearTimeout(p.t); pending.delete(o.r); o.ok ? p.res(o.d || {}) : p.rej(new Error(o.e || 'خطا')); } }
   else if (o.t === 'chat') { bubble('bot', o.text, o.err, o.via); chatBusy(false); }
+  else if (o.t === 'avatar') { window.__tl && window.__tl.avatar(o.d); }
   else if (o.t === 'pong') { if (conn !== 'live') setConn('live'); }
 }
 function openStream() {
@@ -751,9 +821,271 @@ $('#e_subclr').onclick = async () => { await act('enc_sub_clear', {}, 'زیرن�
 
 function renderAll() {
   renderEnc(); renderTor(); renderHome(); renderQueue(); renderLinks(); renderChat(); fillSettings(false); renderSettingsExtra();
+  window.__tl && window.__tl.refresh();
 }
 fillSettings(false); renderAll();
 boot();
+</script>
+<script>
+(() => {
+'use strict';
+/* ===================== Téleios UI layer: پروفایل • ظاهر • زبان ===================== */
+const TG = window.Telegram && window.Telegram.WebApp;
+const APP = document.querySelector('meta[name="rename-bot-personal"]') ? 'personal' : 'admin';
+const DATA = {"EN": {"چت": "Chat", "از": "of", "صف": "Queue", "صدا": "Audio", "کار": "Job", "رله": "Relay", "کدک": "Codec", "خطا": "Error", "رنگ": "Color", "بزن": "run", "فقط": "Only", "کپی": "Copy", "حذف": "Delete", "خانه": "Home", "آهنگ": "Music", "بذار": "", "اصلی": "Original", "فعال": "Active", "لینک": "Link", "بالا": "Top", "عربی": "Arabic", "زنده": "Live", "ویدیو": "Video", "ارسال": "Send", "بفرست": "Send", "لینک)": "link)", "❌ لغو": "❌ Cancel", "انکود": "Encode", "اولین": "First", "دقیقه": "min", "فارسی": "Persian", "پایین": "Bottom", "رله‌ی": "Relay", "تورنت": "Torrent", "امروز": "Today", "ژاپنی": "Japanese", "📝 کپشن": "📝 Caption", "🔈 روشن": "🔈 On", "جدا شد": "Disconnected", "ساعت و": "h", "اندازه": "Size", "آفلاین": "Offline", "موقعیت": "Position", "حجم کل": "Total size", "⛔ توقف": "⛔ Stop", "حذف شد": "Deleted", "لغو شد": "Canceled", "خودکار": "Auto", "📊 وضعیت": "📊 Status", "مگابایت": "MB", "💾 ذخیره": "💾 Save", "آپ‌تایم": "Uptime", "شروع شد": "Started", "انگلیسی": "English", "تنظیمات": "Settings", "🔇 خاموش": "🔇 Off", "لینک‌ها": "Links", "غیرفعال": "Disabled", "شیت فریم": "Frame sheet", "بدون سقف": "No limit", "صف خالیه": "Queue is empty", "⚙️ رفتار": "⚙️ Behavior", "فعال (تا": "Active (up to", "داکیومنت": "Document", "زبان صدا": "Audio language", "❌ ناموفق": "❌ Failed", "▶️ شروع (": "▶️ Start (", "ساخت لینک": "Create link", "🗑 حذف همه": "🗑 Delete all", "تلاش مجدد": "Retry", "✅ تموم شد": "✅ Done", "بدون کپشن": "No caption", "🔘 همه/هیچ": "🔘 All / none", "نوع ارسال": "Send as", "📋 چسباندن": "📋 Paste", "کیفیت CRF": "CRF quality", "فایل خارجی": "External file", "🌐 باز کردن": "🌐 Open", "باقی‌مانده": "left", "👤 پنل شخصی": "👤 Personal panel", "صف خالی شد": "Queue cleared", "🗑 پاک‌کردن": "🗑 Clear", "🎞 انکود صف": "🎞 Encode queue", "قالب خروجی": "Output format", "🎛 پنل ربات": "🎛 Bot panel", "سقف حجم کل": "Total size cap", "ضخامت حاشیه": "Outline thickness", "🧩 الگوی نام": "🧩 Name pattern", "همه حذف شدن": "All deleted", "منتظر ربات…": "Waiting for the bot…", "قالب سفارشی": "Custom template", "لینک کپی شد": "Link copied", "صف خالی بشه؟": "Clear the queue?", "افزودن تورنت": "Add torrent", "بدون زیرنویس": "No subtitles", "🔗 لینک Drive": "🔗 Drive link", "📸 شیت فریم‌ها": "📸 Frame sheet", "پنل شخصی ربات": "Bot personal panel", "پروفایل آماده": "Profile ready", "⏱ کار هم‌زمان": "⏱ Concurrent jobs", "در حال اتصال…": "Connecting…", "🎞 انکود ویدیو": "🎞 Encode video", "در حال دانلود": "Downloading", "ربات جواب نداد": "The bot didn't answer", "🗑 خالی‌کردن صف": "🗑 Empty queue", "داخلی (خودکار)": "Embedded (auto)", "فضای آزاد دیسک": "Free disk space", "پنل کنترل ربات": "Bot control panel", "دانلود و ارسال": "Download & send", "تورنت اضافه شد": "Torrent added", "فایل توی صفه (": "file(s) in queue (", "پیش‌نمایش کپشن": "Caption preview", "استایل زیرنویس": "Subtitle style", "⚡ در حال اجرا —": "⚡ Running —", "💎 کیفیت (H.265)": "💎 Quality (H.265)", "انکود / هاردساب": "Encode / Hardsub", "لینک فعالی نیست": "No active links", "فایل پردازش‌شده": "Files processed", "الگوی نام خالیه": "The name pattern is empty", "👥 گروه‌های مجاز": "👥 Allowed groups", "متن ضخیم (Bold)": "Bold text", "⏭ مدل محلی بعدی": "⏭ Next local model", "فایل بزرگ‌تر از": "file larger than", "لینک معتبری نیست": "Not a valid link", "سقف مدت هر ویدیو": "Max duration per video", "تغییر نام و ارسال": "Rename & send", "رله در دسترس نیست": "Relay unreachable", "پیام باقی مانده •": "messages left •", "💾 ذخیره‌ی پیش‌فرض": "💾 Save as default", "زیرنویس‌ها پاک شد": "Subtitles cleared", "⚖️ متعادل (۱۰۸۰p)": "⚖️ Balanced (1080p)", "📥 فایل‌های توی صف": "📥 Files in queue", "🖼 تامبنیل پیش‌فرض": "🖼 Default thumbnail", "اولویت منبع عوض شد": "Provider priority changed", "✅ تنظیمات ذخیره شد": "✅ Settings saved", "این تورنت لغو بشه؟": "Cancel this torrent?", "اتصال با ربات نیست": "Not connected to the bot", "📱 سبک (۷۲۰p کم‌حجم)": "📱 Light (720p, small)", "هیچ اکانتی وصل نیست": "No account connected", "پاک‌سازی هوشمند نام": "Smart name cleanup", "✅ اکانت گوگل وصل شد": "✅ Google account connected", "➕ افزودن اکانت گوگل": "➕ Add Google account", "فایل‌ها رو انتخاب کن": "Select files", "🧲 تورنت (BitTorrent)": "🧲 Torrent (BitTorrent)", "حافظه‌ی گفتگو پاک شد": "Chat memory cleared", "✏️ تغییر نام و ارسال": "✏️ Rename & send", "🎚 گزینه‌های این اجرا": "🎚 Options for this run", "🪪 وضعیت و سقف‌های تو": "🪪 Your status & limits", "🔤 هاردساب + انکود صف": "🔤 Hardsub + encode queue", "در حال گرفتن اطلاعات…": "Fetching info…", "فایل نمایش داده می‌شه": "files are shown", "درخواست توقف ارسال شد": "Stop request sent", "🤖 منبع‌های هوش مصنوعی": "🤖 AI providers", "🔗 لینک دانلود (Drive)": "🔗 Download link (Drive)", "هنوز زیرنویسی نفرستادی": "No subtitles sent yet", "همه‌ی لینک‌ها حذف بشن؟": "Delete all links?", "در حال ارسال به تلگرام": "Sending to Telegram", "انکود امروز باقی‌مانده": "encodes left today", "تورنت امروز باقی‌مانده": "torrents left today", "H.265 روی این سرور نیست": "H.265 isn't available on this server", "🔗 لینک‌های فعال (Drive)": "🔗 Active links (Drive)", "ارتباط زنده برقرار نیست": "Live connection unavailable", "حداقل یک فایل انتخاب کن": "Select at least one file", "(کمتر = بهتر و حجیم‌تر)": "(lower = better, larger)", "💬 پیام هوش مصنوعی امروز": "💬 AI messages today", "📎 منتظر فایل زیرنویس باش": "📎 Waiting for a subtitle file", "در حال رفتن به مدل بعدی…": "Switching to the next model…", "📦 سقف حجم هر فایل / لینک": "📦 Max size per file / link", "☁️ اکانت‌های Google Drive": "☁️ Google Drive accounts", "چت هوشمند خاموشه (سلول ۵)": "Smart chat is off (cell 5)", "لینک در صف دانلود قرار گرفت": "link(s) added to the download queue", "✅ به‌عنوان پیش‌فرض ذخیره شد": "✅ Saved as default", "از صف «🔗 لینک Drive» رو بزن": "Tap «🔗 Drive link» in the queue", "گروه از لیست مجازها حذف بشه؟": "Remove this group from the allowed list?", "تامبنیل خودکار از فریم ویدیو": "Auto thumbnail from a video frame", "⏳ منتظر فایل زیرنویس توی چت…": "⏳ Waiting for the subtitle file in chat…", "تعداد فریم برای «شیت فریم‌ها»": "Frames for the «frame sheet»", "جواب خودکار توی تلگرام: خاموش": "Auto-reply in Telegram: off", "این یک نمونه زیرنویس فارسی است": "این یک نمونه زیرنویس فارسی است", "فایل رو توی چت برای ربات بفرست": "Send the file to the bot in chat", "هر سؤالی از ربات یا هر موضوعی…": "Ask the bot anything…", "پیش‌نمایش (روی نام نمونه‌ی زیر)": "Preview (on the sample name below)", "چت هوش مصنوعی برای تو فعال نیست": "AI chat isn't enabled for you", "چت پیام‌های متنی توی تلگرام: روشن": "Replying to text messages in Telegram: on", "کمی آهسته‌تر؛ درخواست‌ها زیاد بود": "Slow down a little; too many requests", "شروع شد — پیشرفت رو توی خانه ببین": "Started — see progress on Home", "چت پیام‌های متنی توی تلگرام: خاموش": "Replying to text messages in Telegram: off", "این لینک و فایلش از Drive پاک بشه؟": "Delete this link and its file from Drive?", "اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون": "Clipboard access denied; paste manually", "⬇️ دانلود از لینک و ارسال در تلگرام": "⬇️ Download from a link & send on Telegram", "بزن و متن رو توی Secret کولب با نام": "and put the text in a Colab Secret named", "منتظرم؛ فایل زیرنویس رو توی چت بفرست": "Waiting — send the subtitle file in chat", "🔤 هاردساب (زیرنویس چسبیده روی تصویر)": "🔤 Hardsub (burned-in subtitles)", "آگهی/آیدی/لینک حذف، نقطه و _ → فاصله": "Removes ads/IDs/links; dots and _ → spaces", "رزولوشن (فقط کوچک‌کردن؛ بزرگ نمی‌شه)": "Resolution (downscale only)", "هر خط یک لینک (مستقیم یا Google Drive)": "One link per line (direct or Google Drive)", "انکود روی ربات خاموشه (ENCODE_ENABLED=0)": "Encoding is off on the bot (ENCODE_ENABLED=0)", "ویدیو). همه با تنظیمات پایین انکود می‌شن": "videos). All will be encoded with the settings below", "سرعت انکود (کندتر = حجم کمتر / کیفیت بهتر)": "Encode speed (slower = smaller / better quality)", "(برای زیرنویس ASS/SSA خودِ فایل حفظ می‌شه)": "(For ASS/SSA subtitles the file's own styling is kept)", "نسخه‌ی شخصی ربات الان توسط ادمین خاموش شده": "The personal version is currently turned off by the admin", "اول فایل زیرنویس رو توی چت برای ربات بفرست": "First send the subtitle file to the bot in chat", "ادمین تورنت رو برای کاربران عمومی فعال نکرده": "The admin hasn't enabled torrents for public users", "زبان زیرنویس داخلی (اگه نبود: پیش‌فرض/اولین)": "Embedded subtitle language (fallback: default/first)", "فایل‌های زیرنویس (.srt / .ass / .ssa / .vtt)": "Subtitle files (.srt / .ass / .ssa / .vtt)", "ادمین انکود رو برای کاربران عمومی فعال نکرده": "The admin hasn't enabled encoding for public users", "ffmpeg این سرور کدک لازم (x264/x265) رو نداره": "This server's ffmpeg lacks the needed codec (x264/x265)", "جواب خودکار به پیام‌های متنی توی تلگرام: روشن": "Auto-reply to text messages in Telegram: on", "لینک مگنت معتبر نیست (باید با magnet:? شروع بشه)": "Invalid magnet link (it must start with magnet:?)", "الگوی نام (فقط برای این بار؛ خالی = همون تنظیمات)": "Name pattern (this run only; empty = your settings)", "ffmpeg این سرور libass نداره؛ هاردساب کار نمی‌کنه": "This server's ffmpeg has no libass; hardsub won't work", "قالب کپشن؛ متغیرها مجازه، مثلاً {filename} • {size}": "Caption template; variables allowed, e.g. {filename} • {size}", "برای تنظیم: توی چت یه عکس (نه فایل) برای ربات بفرست": "To set one: send the bot a photo (not a file) in chat", "این اکانت جدا بشه؟ فایل‌های میزبانی‌شده‌اش پاک می‌شن": "Disconnect this account? Its hosted files will be deleted", "ربات جواب نمی‌ده (خاموشه یا هنوز بالا نیومده). رله در دسترسه": "The bot isn't answering (it's off or hasn't started yet). The relay is reachable", "لینک پنل ناقصه؛ توی ربات دوباره /app بزن و از همون دکمه باز کن": "The panel link is incomplete; send /app to the bot again and open it from that button", "صف خالیه؛ اول ویدیو رو برای ربات بفرست (یا /batch برای چند فایل)": "The queue is empty; send a video to the bot first (or /batch for several files)", "برای اینکه اکانت‌ها برای همیشه بمونن و هر بار کد نخوای: توی ربات": "To keep accounts permanently without entering a code each time: in the bot, run", "حالت آفلاین: ذخیره از مسیر قدیمی انجام می‌شه و مینی‌اپ بسته می‌شه": "Offline mode: saving uses the legacy path and the mini app will close", "تنظیمات روی ربات ذخیره می‌شن و برای همه‌ی فایل‌های بعدی اعمال می‌شن": "Settings are saved on the bot and apply to all later files", "نشست پنل بیش از ۲۴ ساعت پیش باز شده و منقضی شده؛ پنل رو ببند و دوباره باز کن": "The panel session was opened over 24 hours ago and expired; close and reopen the panel", "برای H.265 ربات خودکار CRF را ۵ تا بالاتر می‌برد تا کیفیت هم‌ارز H.264 بماند": "For H.265 the bot automatically raises CRF by 5 to keep H.264-equivalent quality", "تورنت روی ربات خاموشه: توی سلول ۵ گزینه‌ی تورنت رو Y بزن و ربات رو دوباره اجرا کن": "Torrent is off on the bot: answer Y to the torrent option in cell 5 and restart the bot", "کد بالا رو اونجا وارد کن و با اکانت دلخواه اجازه بده؛ بعدش خودکار اینجا ظاهر می‌شه": "Enter the code above there and authorize with the account of your choice; it will then appear here automatically", "فایل‌ها رو توی چت برای ربات بفرست (یا فوروارد کن)؛ اینجا نشون داده می‌شن. برای چند فایل، اول": "Send files to the bot in chat (or forward them); they show up here. For several files, first", "ظرفیت هم‌زمان پنل زنده الان پره؛ چند دقیقه بعد دوباره باز کن. (ذخیره‌ی ساده‌ی تنظیمات ممکنه.)": "Live-panel capacity is full right now; try again in a few minutes. (Simple settings saving is still possible.)", "از این شبکه در دسترس نیست (اینترنت قطع، فیلتر یا نیاز به VPN؟). ربات ممکنه روشن باشه ولی پیام‌ها بهش نمی‌رسه": "is not reachable from this network (internet down, filtered, or a VPN needed?). The bot may be running but its messages can't reach it", "پنل از «دکمه‌ی کیبورد» باز شده و تلگرام در این حالت هویت (initData) نمی‌ده، برای همین ربات پیام‌های پنل رو رد می‌کنه": "The panel was opened from the \"keyboard button\"; Telegram gives no identity (initData) in this mode, so the bot rejects the panel's messages", "لینک‌ها بعد از مدتی یا با توقف ربات خودکار از Drive پاک می‌شن. لینک عمومی‌ه: هر کسی که داشته باشه می‌تونه دانلود کنه": "Links are deleted from Drive automatically after a while or when the bot stops. They are public: anyone who has the link can download", "فایل با تنظیمات تو (الگوی نام، تامبنیل، کپشن) توی همین چت با ربات فرستاده می‌شه. بزرگ‌تر از ۲ گیگ خودکار تقسیم می‌شه": "The file is sent to you in this chat with your settings (name pattern, thumbnail, caption). Files over 2 GB are split automatically", "تلگرام هویت معتبری برای پنل نداد؛ پنل رو از دکمه‌ی زیر پیام /app یا منوی «🎛 پنل» باز کن. اگه حل نشد، توی ربات «/app reset» بزن": "Telegram didn't provide a valid identity for the panel; open it from the button under the /app message or the «🎛 Panel» menu. If that doesn't help, send «/app reset» to the bot", "فایل با تنظیمات تو (الگوی نام، تامبنیل، کپشن) توی همین چت با ربات فرستاده می‌شه. سقف حجم هر لینک بالا (در «سقف‌های تو») نوشته شده": "The file is sent to you in this chat with your settings (name pattern, thumbnail, caption). The size cap per link is listed above (under «Your limits»)", "پنل رو از دکمه‌ی «🎛 باز کردن پنل» زیر پیام /app یا از دکمه‌ی منوی «🎛 پنل» کنار فیلد پیام باز کن. (ذخیره‌ی ساده‌ی تنظیمات همچنان ممکنه.)": "Open the panel from the «🎛 Open panel» button under the /app message or the «🎛 Panel» menu button next to the message field. (Simple settings saving is still possible.)", "انکود روی CPU سرور کنده و ممکنه از مدت ویدیو هم بیشتر طول بکشه؛ فقط یک انکود هم‌زمان اجرا می‌شه. زیرنویس نرمِ داخل فایل در MP4 حذف می‌شه (برای حفظش MKV بگیر)": "Encoding is slow on the server CPU and may take longer than the video itself; only one encode runs at a time. Soft subtitles inside MP4 are dropped (use MKV to keep them)", "بعد از زدن دکمه، فایل زیرنویس رو توی چت ربات بفرست. برای چند ویدیو، زیرنویس‌ها هم‌نام ویدیو باشن یا به همون ترتیب فرستاده بشن. فارسیِ Windows-1256 خودکار به UTF-8 تبدیل می‌شه": "After tapping the button, send the subtitle file to the bot in chat. For several videos, name subtitles like the videos or send them in the same order. Windows-1256 Persian is converted to UTF-8 automatically", "دانلود با BitTorrent روی همین سرور انجام می‌شه (بعد از اتمام سید نمی‌کنه) و فایل‌ها با روش «دانلود از لینک» برات فرستاده می‌شن. فقط برای محتوای قانونی/آزاد. فایل .torrent رو توی چت با کپشن": "Downloads use BitTorrent on this server (it doesn't seed after finishing) and files are sent to you via the \"download from link\" flow. For legal/open content only. Send the .torrent file in chat with the caption", "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET تنظیم نشده (راهنما: /connect توی ربات)": "GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set (see /connect in the bot)", "Google Drive وصل نیست": "Google Drive isn't connected", "این اکانت قبلاً جدا شده": "This account was already disconnected", "این تورنت الان منتظر انتخاب نیست": "This torrent isn't waiting for a selection right now", "این تورنت قبلاً تموم یا حذف شده": "This torrent has already finished or been removed", "این لینک قبلاً حذف یا منقضی شده": "This link was already deleted or has expired", "این کار برای نسخه‌ی شخصی در دسترس نیست": "This action isn't available in the personal version", "این کار فقط برای ادمینه": "This action is admin-only", "این گروه توی لیست نیست": "This group isn't in the list", "تامبنیل پیش‌فرضی نیست": "There's no default thumbnail", "حالت دسته‌ای فعاله؛ اول /done یا /cancel بزن": "Batch mode is on; send /done or /cancel first", "حذف از Drive ناموفق بود؛ دوباره تلاش کن": "Deleting from Drive failed; try again", "ساخت لینک دانلود برای نسخه‌ی شخصی فعال نیست": "Creating download links isn't enabled for the personal version", "صفی نیست؛ اول فایل رو برای ربات بفرست": "The queue is empty; send a file to the bot first", "صفی نیست؛ اول ویدیو رو برای ربات بفرست": "The queue is empty; send a video to the bot first", "عملیات نامعتبر": "Invalid operation", "لینک معتبری پیدا نشد": "No valid link found", "لینک مگنت معتبری پیدا نشد (باید با magnet:? شروع بشه)": "No valid magnet link found (it must start with magnet:?)", "مدل در حال بارگذاریه؛ چند دقیقه‌ی دیگه": "The model is loading; try again in a few minutes", "مدل محلی خاموشه": "The local model is off", "نامعتبر": "Invalid", "نشد": "Failed", "پیام خالیه": "Empty message", "چت هوش مصنوعی برای نسخه‌ی شخصی فعال نیست": "AI chat isn't enabled for the personal version", "کار فعالی نیست": "There's no active job", "یه اتصال در حال انجامه؛ کدش رو وارد کن یا چند دقیقه صبر کن": "A connection is in progress; enter its code or wait a few minutes", "یه کار در حال اجراست": "A job is already running", "یه کار در حال اجراست؛ اول توقفش بده": "A job is already running; stop it first", "دستور ناشناخته": "Unknown command", "جدا": "Disconnect", "ذخیره نشده": "Not saved", "⚠️ قطع شده": "⚠️ Disconnected", "✅ ذخیره شده": "✅ Saved"}, "TPL": [["^(\\d+) دقیقه$", "$1 min"], ["^(\\d+) ساعت و (\\d+) دقیقه$", "$1 h $2 min"], ["^سقف حجم کل: ([\\d.]+) مگابایت$", "Total size cap: $1 MB"], ["^فعال \\(تا (\\d+) لینک\\)$", "Active (up to $1 links)"], ["^سقف مدت هر ویدیو: (\\d+) دقیقه$", "Max duration per video: $1 min"], ["^(\\d+) از (\\d+) باقی‌مانده$", "$1 of $2 left"], ["^امروز (\\d+) از (\\d+) پیام باقی مانده$", "Today $1 of $2 messages left"], ["^(\\d+) از (\\d+) تورنت امروز باقی‌مانده$", "$1 of $2 torrents left today"], ["^(\\d+) از (\\d+) انکود امروز باقی‌مانده$", "$1 of $2 encodes left today"], ["^(\\d+) لینک در صف دانلود قرار گرفت$", "$1 link(s) added to the download queue"], ["^📥 (\\d+) فایل توی صفه \\((\\d+) ویدیو\\)\\. همه با تنظیمات پایین انکود می‌شن$", "📥 $1 file(s) in the queue ($2 video(s)). All will be encoded with the settings below"], ["^فقط (\\d+) فایل بزرگ‌تر از (\\d+) فایل نمایش داده می‌شه$", "Only the $1 largest of $2 files are shown"], ["^رله‌ی (\\S+) از این شبکه در دسترس نیست[\\s\\S]*$", "The relay $1 isn't reachable from this network (internet down, filtered, or a VPN needed?). The bot may be running but its messages can't reach it"], ["^⚡ در حال اجرا — ([\\s\\S]*)$", "⚡ Running — $1"], ["^(\\d+) لینک حذف نشد$", "$1 link(s) couldn't be deleted"], ["^سقف پیام‌های هوش مصنوعی امروزت \\((\\d+)\\) پر شده؛ فردا دوباره بپرس$", "Your AI message limit for today ($1) is used up; ask again tomorrow"], ["^([\\d.,]+) مگابایت$", "$1 MB"], ["^رله (\\d+)$", "Relay $1"]]};
+const EN = DATA.EN, TPL = DATA.TPL.map(([r, e]) => [new RegExp(r), e]);
+const FA_RE = /[\u0600-\u06FF]/;
+const LS = 'teleios.ui.v1', AVK = 'teleios.avatar';
+const DEF = { lang: 'fa', theme: 'auto', glass: false, anim: true, haptic: true, accent: '', head: 'default', headColor: '#3b82f6',
+              font: 'm', dens: 'cozy', radius: 'md', bg: 'plain' };
+const PRESETS = {
+  Téleios: { accent: '', theme: 'auto', glass: false, head: 'default', bg: 'plain', radius: 'md' },
+  Aurora: { accent: '#8b5cf6', theme: 'auto', glass: true, head: 'glass', bg: 'aurora', radius: 'round' },
+  Midnight: { accent: '#22d3ee', theme: 'dark', glass: true, head: 'glass', bg: 'gradient', radius: 'md' },
+  Sunset: { accent: '#f97316', theme: 'light', glass: false, head: 'gradient', bg: 'gradient', radius: 'round' },
+  Mint: { accent: '#10b981', theme: 'light', glass: false, head: 'accent', bg: 'plain', radius: 'md' },
+  Rose: { accent: '#ec4899', theme: 'auto', glass: true, head: 'gradient', bg: 'aurora', radius: 'round' },
+};
+const ACCENTS = ['', '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#10b981', '#06b6d4'];
+
+/* رشته‌های خود این لایه (دوزبانه؛ مترجمِ خودکار بهشون دست نمی‌زنه) */
+const TL = {
+  fa: { appearance: 'ظاهر و زبان', language: 'زبان', theme: 'پوسته', auto: 'خودکار', light: 'روشن', dark: 'تیره', glass: 'سبک شیشه‌ای',
+        anim: 'انیمیشن‌ها', haptic: 'لرزش لمسی', more: 'تنظیمات بیشتر', accent: 'رنگ اصلی', head: 'هدر', h_default: 'پیش‌فرض', h_accent: 'رنگی',
+        h_gradient: 'گرادیان', h_glass: 'شیشه‌ای', h_custom: 'دلخواه', font: 'اندازه‌ی متن', dens: 'تراکم', compact: 'فشرده', cozy: 'راحت',
+        radius: 'گوشه‌ها', sharp: 'تیز', md: 'معمولی', round: 'گرد', bg: 'پس‌زمینه', plain: 'ساده', grad: 'گرادیان', aurora: 'شفق',
+        presets: 'قالب‌های آماده', reset: '↺ بازنشانی', numid: 'شناسه‌ی عددی', copied: 'شناسه کپی شد', guest: 'کاربر مهمان',
+        r_admin: '👑 ادمین', r_allowed: '✅ کاربر مجاز', r_public: '👤 کاربر عمومی', r_none: '— نقش نامشخص', sub_admin: 'پنل ادمین', sub_personal: 'پنل شخصی',
+        g1: 'صبح بخیر', g2: 'ظهر بخیر', g3: 'عصر بخیر', g4: 'شب بخیر', tag: 'کاربر Téleios', noprof: 'برای دیدن پروفایل، پنل را از دکمه‌ی اینلاین باز کن',
+        lang_btn: 'EN', language_fa: 'فارسی', language_en: 'English', s: 'کوچک', m: 'متوسط', l: 'بزرگ', headcol: 'رنگ هدر' },
+  en: { appearance: 'Appearance & language', language: 'Language', theme: 'Theme', auto: 'Auto', light: 'Light', dark: 'Dark', glass: 'Glass style',
+        anim: 'Animations', haptic: 'Haptics', more: 'More options', accent: 'Accent color', head: 'Header', h_default: 'Default', h_accent: 'Accent',
+        h_gradient: 'Gradient', h_glass: 'Glass', h_custom: 'Custom', font: 'Text size', dens: 'Density', compact: 'Compact', cozy: 'Cozy',
+        radius: 'Corners', sharp: 'Sharp', md: 'Normal', round: 'Round', bg: 'Background', plain: 'Plain', grad: 'Gradient', aurora: 'Aurora',
+        presets: 'Presets', reset: '↺ Reset', numid: 'Numeric ID', copied: 'ID copied', guest: 'Guest',
+        r_admin: '👑 Admin', r_allowed: '✅ Allowed user', r_public: '👤 Public user', r_none: '— Role unknown', sub_admin: 'Admin panel', sub_personal: 'Personal panel',
+        g1: 'Good morning', g2: 'Good afternoon', g3: 'Good evening', g4: 'Good night', tag: 'Téleios user', noprof: 'Open the panel from the inline button to see your profile',
+        lang_btn: 'FA', language_fa: 'فارسی', language_en: 'English', s: 'Small', m: 'Medium', l: 'Large', headcol: 'Header color' },
+};
+let ui = Object.assign({}, DEF), moreOpen = false, botAvatar = '';
+const t = k => (TL[ui.lang] || TL.fa)[k] || k;
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ---------- ذخیره/بازیابی ---------- */
+function load() {
+  try { const v = JSON.parse(localStorage.getItem(LS) || 'null'); if (v && typeof v === 'object') ui = Object.assign({}, DEF, v); } catch (e) {}
+  try { botAvatar = sessionStorage.getItem(AVK) || ''; } catch (e) {}
+}
+function save() {
+  const s = JSON.stringify(ui);
+  try { localStorage.setItem(LS, s); } catch (e) {}
+  try { if (TG && TG.CloudStorage && s.length < 3900) TG.CloudStorage.setItem('tlui', s, () => {}); } catch (e) {}  // همگام بین دستگاه‌ها
+}
+function cloudRestore() {
+  try {
+    if (!TG || !TG.CloudStorage || localStorage.getItem(LS)) return;
+    TG.CloudStorage.getItem('tlui', (err, v) => { if (!err && v) { try { ui = Object.assign({}, DEF, JSON.parse(v)); apply(); renderOwn(); } catch (e) {} } });
+  } catch (e) {}
+}
+
+/* ---------- رنگ ---------- */
+const hex2rgb = h => { h = String(h).replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&'); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) || 0); };
+const rgb2hex = a => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+const lum = h => { const [r, g, b] = hex2rgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+const fgFor = h => lum(h) > .42 ? '#111111' : '#ffffff';
+const mix = (a, b, p) => { const x = hex2rgb(a), y = hex2rgb(b); return rgb2hex(x.map((v, i) => v * (1 - p) + y[i] * p)); };
+function resolveHex(expr) {
+  const el = document.createElement('i'); el.style.cssText = 'position:absolute;visibility:hidden;color:' + expr; document.body.appendChild(el);
+  const c = getComputedStyle(el).color; el.remove(); const m = c.match(/[\d.]+/g);
+  return m && m.length >= 3 ? rgb2hex(m.slice(0, 3).map(Number)) : '#ffffff';
+}
+
+/* ---------- اعمال ظاهر ---------- */
+const HF = TG && TG.HapticFeedback; const HF0 = HF ? { i: HF.impactOccurred, n: HF.notificationOccurred, s: HF.selectionChanged } : null;
+function hap() { try { if (ui.haptic && HF) HF.selectionChanged(); } catch (e) {} }
+function apply() {
+  const h = document.documentElement, st = h.style;
+  h.lang = ui.lang; h.dir = ui.lang === 'fa' ? 'rtl' : 'ltr';
+  Object.assign(h.dataset, { tlTheme: ui.theme, tlHead: ui.head, tlFont: ui.font, tlDens: ui.dens, tlRadius: ui.radius, tlBg: ui.bg });
+  h.classList.toggle('tl-glass', !!ui.glass); h.classList.toggle('tl-noanim', !ui.anim);
+  h.classList.toggle('tl-fx', !!ui.glass || ui.bg !== 'plain');
+  if (ui.accent) { st.setProperty('--ac', ui.accent); st.setProperty('--lnk', ui.accent); st.setProperty('--act', fgFor(ui.accent)); }
+  else { st.removeProperty('--ac'); st.removeProperty('--lnk'); st.removeProperty('--act'); }
+  const ac = ui.accent || resolveHex('var(--ac)');
+  let bg = '', fg = '';
+  if (ui.head === 'accent') { bg = ac; fg = fgFor(ac); }
+  else if (ui.head === 'gradient') { const b2 = mix(ac, '#8b5cf6', .55); bg = `linear-gradient(135deg, ${ac}, ${b2})`; fg = fgFor(mix(ac, b2, .5)); }
+  else if (ui.head === 'custom') { bg = ui.headColor; fg = fgFor(ui.headColor); }
+  bg ? st.setProperty('--tl-head-bg', bg) : st.removeProperty('--tl-head-bg'); fg ? st.setProperty('--tl-head-fg', fg) : st.removeProperty('--tl-head-fg');
+  if (HF && HF0) { HF.impactOccurred = ui.haptic ? HF0.i : () => {}; HF.notificationOccurred = ui.haptic ? HF0.n : () => {}; HF.selectionChanged = ui.haptic ? HF0.s : () => {}; }
+  document.title = 'Téleios';
+  requestAnimationFrame(nativeColors);
+  translateAll();
+}
+function nativeColors() {   // رنگ هدر/پس‌زمینه‌ی خودِ تلگرام
+  try {
+    if (!TG) return;
+    const page = resolveHex('var(--bg)');
+    const head = ui.head === 'accent' ? (ui.accent || resolveHex('var(--ac)')) : ui.head === 'gradient' ? (ui.accent || resolveHex('var(--ac)')) : ui.head === 'custom' ? ui.headColor : page;
+    TG.setHeaderColor && TG.setHeaderColor(head); TG.setBackgroundColor && TG.setBackgroundColor(page); TG.setBottomBarColor && TG.setBottomBarColor(page);
+  } catch (e) {}
+}
+
+/* ---------- ترجمه‌ی خودکار رابط (جدول عبارت‌ها + الگوها) ---------- */
+const PUNCT = /^([\s.,:؛؟?!…]*)([\s\S]*?)([\s.,:؛؟?!…]*)$/;
+const look = k => (Object.prototype.hasOwnProperty.call(EN, k) ? EN[k] : undefined);
+function tr(s) {
+  if (!FA_RE.test(s)) return null;
+  const trimmed = s.trim(), at = s.indexOf(trimmed);
+  if (trimmed && look(trimmed) !== undefined) return s.slice(0, at) + look(trimmed) + s.slice(at + trimmed.length);   // عبارت‌هایی که خودشون «…» یا «:» دارن
+  const m = PUNCT.exec(s); const pre = m[1], core = m[2], post = m[3];
+  if (!core) return null;
+  let out = Object.prototype.hasOwnProperty.call(EN, core) ? EN[core] : undefined;
+  if (out === undefined && core.includes(' • ')) { const parts = core.split(' • ').map(p => { const x = tr(p); return x === null ? p : x; }); out = parts.join(' • '); }
+  if (out === undefined) for (const [re, rep] of TPL) { const mm = re.exec(core); if (mm) { out = rep.replace(/\$(\d)/g, (_, i) => { const x = tr(mm[+i]); return x === null ? mm[+i] : x; }); break; } }
+  if (out === undefined) { const m2 = /^([^\u0600-\u06FFA-Za-z0-9]+)([\s\S]+)$/.exec(core); if (m2 && Object.prototype.hasOwnProperty.call(EN, m2[2])) out = m2[1] + EN[m2[2]]; }
+  return out === undefined ? null : pre + out + post;
+}
+const SKIP = /^(SCRIPT|STYLE|TEXTAREA|CODE)$/;
+function skipNode(n) { for (let p = n.parentNode; p; p = p.parentNode) if (p.nodeType === 1 && (p.hasAttribute('data-tl-own') || SKIP.test(p.tagName))) return true; return false; }
+function xText(n) {
+  if (skipNode(n)) return;
+  const cur = n.nodeValue;
+  if (ui.lang === 'en') {
+    if (n.__en !== undefined && cur === n.__en) return;
+    const v = tr(cur); if (v !== null && v !== cur) { n.__fa = cur; n.__en = v; n.nodeValue = v; }
+  } else if (n.__en !== undefined) { if (cur === n.__en) n.nodeValue = n.__fa; delete n.__en; delete n.__fa; }
+}
+const ATTRS = ['placeholder', 'title', 'aria-label'];
+function xAttr(el, a) {
+  if (el.closest && el.closest('[data-tl-own]')) return;
+  const key = '__a_' + a, cur = el.getAttribute(a); if (cur == null) return;
+  if (ui.lang === 'en') { if (el[key] && el[key].en === cur) return; const v = tr(cur); if (v !== null && v !== cur) { el[key] = { fa: cur, en: v }; el.setAttribute(a, v); } }
+  else if (el[key]) { if (cur === el[key].en) el.setAttribute(a, el[key].fa); delete el[key]; }
+}
+function xTree(root) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) xText(n);
+  if (root.querySelectorAll) { ATTRS.forEach(a => root.querySelectorAll('[' + a + ']').forEach(el => xAttr(el, a))); ATTRS.forEach(a => root.nodeType === 1 && root.hasAttribute(a) && xAttr(root, a)); }
+}
+function translateAll() { xTree(document.body); }
+const mo = new MutationObserver(ms => {
+  if (ui.lang !== 'en') return;
+  for (const m of ms) {
+    if (m.type === 'childList') m.addedNodes.forEach(n => n.nodeType === 3 ? xText(n) : n.nodeType === 1 && xTree(n));
+    else if (m.type === 'characterData') xText(m.target);
+    else if (m.type === 'attributes') xAttr(m.target, m.attributeName);
+  }
+});
+
+/* ---------- پروفایل ---------- */
+const user = () => (TG && TG.initDataUnsafe && TG.initDataUnsafe.user) || null;
+const curS = () => (typeof S !== 'undefined' ? S : null);
+function role() {
+  const me = curS() && curS().me; if (!me) return null;
+  if (me.admin) return 'admin'; if (me.pub) return 'public'; return 'allowed';
+}
+function greet() { const h = new Date().getHours(); return t(h >= 5 && h < 12 ? 'g1' : h < 16 ? 'g2' : h < 20 ? 'g3' : 'g4'); }
+function setAvatars() {
+  const u = user(), src = botAvatar || (u && u.photo_url) || '';
+  const name = u ? [u.first_name, u.last_name].filter(Boolean).join(' ') : '';
+  const ini = (name || 'T').trim().charAt(0).toUpperCase();
+  const hue = u && u.id ? (u.id * 47) % 360 : 215;
+  document.documentElement.style.setProperty('--tl-h', hue);
+  [['tlAvaImg', 'tlAvaTxt'], ['tlHavImg', 'tlHavTxt']].forEach(([i, x]) => {
+    const im = $('#' + i), tx = $('#' + x); if (!im || !tx) return;
+    tx.textContent = ini;
+    if (src) { im.onerror = () => { im.hidden = true; tx.hidden = false; }; if (im.getAttribute('src') !== src) im.src = src; im.hidden = false; tx.hidden = true; }
+    else { im.hidden = true; tx.hidden = false; }
+  });
+}
+function ensureHero() {
+  const box = $('#tlHero'); if (!box || box.__built) return; box.__built = true;
+  box.innerHTML = `<div class="tl-hero-in"><div class="tl-ava"><i class="tl-ring"></i><img id="tlAvaImg" alt="" hidden><b id="tlAvaTxt">T</b></div>
+  <div class="tl-info"><div class="tl-greet" id="tlGreet"></div><div class="tl-nm"><span id="tlName"></span> <span id="tlPrem" hidden title="Telegram Premium">⭐</span></div><div class="tl-un" id="tlUn"></div></div></div>
+  <div class="tl-pills"><button type="button" class="tl-pill" id="tlCopy"><small id="tlIdLbl"></small><code id="tlUid">—</code> <span>⧉</span></button><span class="tl-pill" id="tlRole"></span>
+  <button type="button" class="tl-pill" id="tlLangBtn"></button><button type="button" class="tl-pill" id="tlOpenApp">🎨</button></div>
+  <div class="tl-foot"><span id="tlTag"></span><span id="tlBot">Téleios</span></div>`;
+  $('#tlCopy').onclick = copyId; $('#tlLangBtn').onclick = () => setLang(ui.lang === 'fa' ? 'en' : 'fa');
+  $('#tlOpenApp').onclick = () => { moreOpen = true; if (typeof go === 'function') go('set'); renderApp(); const a = $('#tlApp'); a && a.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const hv = $('#tlHav'); if (hv) hv.onclick = () => { if (typeof go === 'function') go('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+}
+function renderHero() {
+  ensureHero(); const u = user(), r = role();
+  const name = u ? [u.first_name, u.last_name].filter(Boolean).join(' ') : '';
+  $('#tlGreet').textContent = greet();
+  $('#tlName').textContent = name || t('guest');
+  $('#tlPrem').hidden = !(u && u.is_premium);
+  $('#tlUn').textContent = u ? (u.username ? '\u2066@' + u.username + '\u2069' : (u.language_code ? u.language_code.toUpperCase() : '')) : t('noprof');
+  $('#tlIdLbl').textContent = t('numid'); $('#tlUid').textContent = u && u.id ? u.id : '—';
+  $('#tlRole').textContent = r ? t('r_' + r) : t('r_none');
+  $('#tlLangBtn').textContent = '🌐 ' + t('lang_btn'); $('#tlTag').textContent = t('tag');
+  const me = curS() && curS().me; $('#tlBot').textContent = me && me.bot ? '@' + me.bot : 'Téleios';
+  const sub = $('#tlSub'); if (sub) sub.textContent = t(APP === 'personal' ? 'sub_personal' : (r === 'admin' || !r ? 'sub_admin' : 'sub_personal'));
+  setAvatars();
+}
+function copyId() {
+  const u = user(); if (!u || !u.id) return; const s = String(u.id);
+  const done = () => { try { typeof toast === 'function' && toast(t('copied')); } catch (e) {} };
+  try { navigator.clipboard.writeText(s).then(done, () => fb()); } catch (e) { fb(); }
+  function fb() { const a = document.createElement('textarea'); a.value = s; a.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); done(); } catch (e) {} a.remove(); }
+  hap();
+}
+
+/* ---------- کارت ظاهر ---------- */
+function seg(name, opts) { return `<div class="seg">${opts.map(([v, k]) => `<button type="button" data-set="${name}" data-v="${v}" class="${ui[name] === v ? 'on' : ''}">${esc(t(k))}</button>`).join('')}</div>`; }
+function tog(name, label) { return `<div class="sw"><span>${esc(t(label))}</span><button type="button" class="tg ${ui[name] ? 'on' : ''}" data-tog="${name}" aria-label="${esc(t(label))}"></button></div>`; }
+function renderApp() {
+  const box = $('#tlApp'); if (!box) return;
+  const sw = ACCENTS.map(c => `<button type="button" class="tl-sw ${c === '' ? 'auto' : ''} ${ui.accent === c ? 'on' : ''}" data-acc="${c}" style="${c ? 'background:' + c : ''}" aria-label="${c || 'auto'}"></button>`).join('');
+  box.innerHTML = `<h2>🎨 ${esc(t('appearance'))}</h2>
+  <span class="tl-lbl">${esc(t('language'))}</span>${seg('lang', [['fa', 'language_fa'], ['en', 'language_en']])}
+  <span class="tl-lbl">${esc(t('theme'))}</span>${seg('theme', [['auto', 'auto'], ['light', 'light'], ['dark', 'dark']])}
+  ${tog('glass', 'glass')}
+  <details ${moreOpen ? 'open' : ''}><summary>${esc(t('more'))}</summary>
+    <span class="tl-lbl">${esc(t('accent'))}</span><div class="tl-sws">${sw}<input type="color" data-color="accent" value="${ui.accent || resolveHex('var(--ac)')}" aria-label="${esc(t('accent'))}"></div>
+    <span class="tl-lbl">${esc(t('head'))}</span>${seg('head', [['default', 'h_default'], ['accent', 'h_accent'], ['gradient', 'h_gradient'], ['glass', 'h_glass'], ['custom', 'h_custom']])}
+    ${ui.head === 'custom' ? `<div class="tl-sws"><span class="tl-lbl" style="margin:0">${esc(t('headcol'))}</span><input type="color" data-color="headColor" value="${ui.headColor}" aria-label="${esc(t('headcol'))}"></div>` : ''}
+    <span class="tl-lbl">${esc(t('bg'))}</span>${seg('bg', [['plain', 'plain'], ['gradient', 'grad'], ['aurora', 'aurora']])}
+    <span class="tl-lbl">${esc(t('font'))}</span>${seg('font', [['s', 's'], ['m', 'm'], ['l', 'l']])}
+    <span class="tl-lbl">${esc(t('dens'))}</span>${seg('dens', [['compact', 'compact'], ['cozy', 'cozy']])}
+    <span class="tl-lbl">${esc(t('radius'))}</span>${seg('radius', [['sharp', 'sharp'], ['md', 'md'], ['round', 'round']])}
+    ${tog('anim', 'anim')}${tog('haptic', 'haptic')}
+    <span class="tl-lbl">${esc(t('presets'))}</span><div class="tl-chips">${Object.keys(PRESETS).map(n => `<button type="button" data-preset="${n}">${n}</button>`).join('')}<button type="button" class="bad" data-reset="1">${esc(t('reset'))}</button></div>
+  </details>`;
+}
+function setLang(l) { ui.lang = l; save(); apply(); renderOwn(); }
+function changed() { save(); apply(); renderOwn(); hap(); }
+function onApp(e) {
+  const b = e.target.closest('button'); if (!b || !b.closest('#tlApp')) return;
+  if (b.dataset.set) { if (b.dataset.set === 'lang') return setLang(b.dataset.v); ui[b.dataset.set] = b.dataset.v; return changed(); }
+  if (b.dataset.tog) { ui[b.dataset.tog] = !ui[b.dataset.tog]; return changed(); }
+  if (b.dataset.acc !== undefined) { ui.accent = b.dataset.acc; return changed(); }
+  if (b.dataset.preset) { Object.assign(ui, PRESETS[b.dataset.preset]); return changed(); }
+  if (b.dataset.reset) { const l = ui.lang; ui = Object.assign({}, DEF, { lang: l }); return changed(); }
+}
+function onColor(e) {
+  const i = e.target; if (!i.dataset || !i.dataset.color) return;
+  ui[i.dataset.color] = i.value; if (i.dataset.color === 'accent') { /* نگه‌داشتن انتخاب سفارشی */ } save(); apply();
+  if (e.type === 'change') renderOwn();
+}
+function renderOwn() { renderHero(); renderApp(); const d = $('#tlApp details'); if (d) d.ontoggle = () => { moreOpen = d.open; }; }
+
+/* ---------- API عمومی برای اسکریپت اصلی ---------- */
+window.__tl = {
+  refresh() { try { renderHero(); } catch (e) {} },
+  avatar(d) { if (typeof d === 'string' && d.startsWith('data:image/')) { botAvatar = d; try { sessionStorage.setItem(AVK, d); } catch (e) {} setAvatars(); } },
+  get ui() { return Object.assign({}, ui); },
+};
+
+/* ---------- راه‌اندازی ---------- */
+load();
+const bgEl = document.createElement('div'); bgEl.id = 'tlBg'; document.body.prepend(bgEl);
+document.addEventListener('click', onApp); document.addEventListener('input', onColor); document.addEventListener('change', onColor);
+mo.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+apply(); renderOwn(); cloudRestore();
+})();
+
 </script>
 </body>
 </html>
