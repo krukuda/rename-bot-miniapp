@@ -6,6 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="rename-bot-panel" content="2">
 <title>Téleios</title>
+<link rel="icon" href="logo.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{
@@ -141,7 +142,7 @@ html.tl-glass .stat,html.tl-glass .prev{background:color-mix(in srgb,var(--ac) 1
 html[data-tl-head="accent"] .top,html[data-tl-head="gradient"] .top,html[data-tl-head="custom"] .top{-webkit-backdrop-filter:none;backdrop-filter:none}
 html[data-tl-head="accent"] .top .chip,html[data-tl-head="gradient"] .top .chip,html[data-tl-head="custom"] .top .chip{background:rgba(255,255,255,.22);color:inherit}
 .tl-brand{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:.2px}
-.tl-brand svg{flex:none}.tl-brand small{font-weight:500;font-size:11.5px;opacity:.72;margin-inline-start:2px;white-space:nowrap}
+.tl-brand svg{flex:none}.tl-brand .tl-logo{width:28px;height:28px;border-radius:8px;object-fit:cover;flex:none;box-shadow:0 1px 4px rgba(0,0,0,.25)}.tl-brand small{font-weight:500;font-size:11.5px;opacity:.72;margin-inline-start:2px;white-space:nowrap}
 .tl-hav{width:34px;height:34px;min-height:0;padding:0;border-radius:50%;flex:none;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,hsl(var(--tl-h,215) 75% 55%),hsl(calc(var(--tl-h,215) + 50) 75% 50%));color:#fff;font-weight:700;box-shadow:0 0 0 2px color-mix(in srgb,var(--ac) 55%,transparent)}
 .tl-hav img{width:100%;height:100%;object-fit:cover;display:block}
 
@@ -176,7 +177,7 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
 </style>
 </head>
 <body>
-<div class="top"><button class="tl-hav" id="tlHav" type="button" data-tl-own aria-label="profile"><img id="tlHavImg" alt="" hidden><span id="tlHavTxt">T</span></button><h1 class="tl-brand" data-tl-own><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><defs><linearGradient id="tlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--ac)"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><circle cx="16" cy="16" r="13.5" fill="none" stroke="url(#tlg)" stroke-width="2.6"/><path d="M9.5 11.5h13M16 11.5v11" stroke="url(#tlg)" stroke-width="3" stroke-linecap="round" fill="none"/></svg><span>Téleios</span><small id="tlSub"></small></h1><span id="chip" class="chip"><i class="dot"></i><span id="chipt">در حال اتصال…</span></span></div>
+<div class="top"><button class="tl-hav" id="tlHav" type="button" data-tl-own aria-label="profile"><img id="tlHavImg" alt="" hidden><span id="tlHavTxt">T</span></button><h1 class="tl-brand" data-tl-own><img class="tl-logo" src="logo.png" alt="" width="28" height="28" style="display:none" onload="this.style.display='block';this.nextElementSibling.style.display='none'" onerror="this.remove()"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true"><defs><linearGradient id="tlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--ac)"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><circle cx="16" cy="16" r="13.5" fill="none" stroke="url(#tlg)" stroke-width="2.6"/><path d="M9.5 11.5h13M16 11.5v11" stroke="url(#tlg)" stroke-width="3" stroke-linecap="round" fill="none"/></svg><span>Téleios</span><small id="tlSub"></small></h1><span id="chip" class="chip"><i class="dot"></i><span id="chipt">در حال اتصال…</span></span></div>
 <main>
   <div id="banner" class="banner"></div>
 
@@ -188,6 +189,7 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
     <div class="card">
       <h2>⬇️ دانلود از لینک و ارسال در تلگرام</h2>
       <textarea id="urls" class="mono" placeholder="هر خط یک لینک (مستقیم یا Google Drive)" rows="3"></textarea>
+      <div class="row" id="encRow" style="margin-top:8px;display:none"><label class="row grow" style="gap:8px;cursor:pointer"><input type="checkbox" id="urlEnc"><span>🎞 انکود بعد از دانلود</span></label><button class="sm" id="encAutoBtn"></button></div>
       <div class="row" style="margin-top:8px"><button class="pri grow" id="goUrl">دانلود و ارسال</button><button id="pasteUrl">📋 چسباندن</button></div>
       <div class="hint">فایل با تنظیمات تو (الگوی نام، تامبنیل، کپشن) توی همین چت با ربات فرستاده می‌شه. بزرگ‌تر از ۲ گیگ خودکار تقسیم می‌شه.</div>
     </div>
@@ -261,6 +263,7 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
       <div id="tornote" class="hint" style="display:none;font-size:14px"></div>
       <div id="torctl">
         <textarea id="magnet" class="mono" placeholder="magnet:?xt=urn:btih:…" rows="2"></textarea>
+        <label class="row" id="magEncRow" style="margin-top:8px;gap:8px;cursor:pointer;display:none"><input type="checkbox" id="magEnc"><span>🎞 انکود بعد از دانلود</span></label>
         <div class="row" style="margin-top:8px"><button class="pri grow" id="goMagnet">افزودن تورنت</button><button id="pasteMagnet">📋 چسباندن</button></div>
       </div>
       <div id="tors"></div>
@@ -562,7 +565,7 @@ async function addAcct() {
 $('#goUrl').onclick = async () => {
   const urls = $('#urls').value.split(/\s+/).filter(x => /^https?:\/\//i.test(x));
   if (!urls.length) return toast('لینک معتبری نیست', true);
-  const r = await act('get_url', { urls }, null);
+  const r = await act('get_url', { urls, enc: !!$('#urlEnc').checked }, null);
   if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#urls').value = ''; }
 };
 $('#pasteUrl').onclick = async () => { try { $('#urls').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
@@ -711,7 +714,8 @@ function renderTor() {
     if (t.stage === 'select') {
       body += (t.files || []).map(f => `<label class="item"><input type="checkbox" data-k="${esc(t.k)}" data-id="${f.id}" ${torSel[t.k].has(f.id) ? 'checked' : ''}><span class="nm">${esc(f.p)}</span><span class="sub">${fmtSize(f.b)}</span></label>`).join('');
       if (t.nf > (t.files || []).length) body += `<div class="hint">فقط ${(t.files || []).length} فایل بزرگ‌تر از ${t.nf} فایل نمایش داده می‌شه.</div>`;
-      body += `<div class="row" style="margin-top:8px"><button class="pri grow" onclick="torGo('${esc(t.k)}')">▶️ شروع (${fmtSize(torTotal(t))})</button><button onclick="torAll('${esc(t.k)}')">🔘 همه/هیچ</button></div>`;
+      if (S.enc && S.enc.on) body += `<label class="row" style="margin-top:8px;gap:8px;cursor:pointer"><input type="checkbox" ${(t.k in torEnc ? torEnc[t.k] : t.enc) ? 'checked' : ''} onchange="torEncSet('${esc(t.k)}', this.checked)"><span>🎞 انکود بعد از دانلود</span></label>`;
+    body += `<div class="row" style="margin-top:8px"><button class="pri grow" onclick="torGo('${esc(t.k)}')">▶️ شروع (${fmtSize(torTotal(t))})</button><button onclick="torAll('${esc(t.k)}')">🔘 همه/هیچ</button></div>`;
     }
     if (live) body += `<div class="row" style="margin-top:8px"><button class="sm bad" onclick="torCancel('${esc(t.k)}')">❌ لغو</button></div>`;
     return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><div class="nm mono" style="font-weight:600">🧲 ${esc(t.name || 'تورنت')} ${t.size ? '<span class="sub">• ' + fmtSize(t.size) + '</span>' : ''}</div>${body}</div>`;
@@ -721,13 +725,15 @@ function renderTor() {
     cb.checked ? s.add(+cb.dataset.id) : s.delete(+cb.dataset.id); renderTor();
   });
 }
-window.torGo = async k => { const ids = [...(torSel[k] || [])]; if (!ids.length) return toast('حداقل یک فایل انتخاب کن', true); await act('tor_go', { k, ids }, 'شروع شد'); };
+const torEnc = {};
+window.torEncSet = (k, v) => { torEnc[k] = v; };
+window.torGo = async k => { const ids = [...(torSel[k] || [])]; if (!ids.length) return toast('حداقل یک فایل انتخاب کن', true); const t = ((S && S.tors) || []).find(x => x.k === k) || {}; await act('tor_go', { k, ids, enc: k in torEnc ? !!torEnc[k] : !!t.enc }, 'شروع شد'); };
 window.torCancel = async k => { if (confirm('این تورنت لغو بشه؟')) await act('tor_cancel', { k }, 'لغو شد'); };
 window.torAll = k => { const t = ((S && S.tors) || []).find(x => x.k === k); if (!t) return; const s = torSel[k]; torSel[k] = (s && s.size === t.files.length) ? new Set() : new Set(t.files.map(f => f.id)); renderTor(); };
 $('#goMagnet').onclick = async () => {
   const magnet = $('#magnet').value.trim();
   if (!/^magnet:\?/i.test(magnet)) return toast('لینک مگنت معتبر نیست (باید با magnet:? شروع بشه)', true);
-  if (await act('tor_add', { magnet }, 'تورنت اضافه شد')) $('#magnet').value = '';
+  if (await act('tor_add', { magnet, enc: !!$('#magEnc').checked }, 'تورنت اضافه شد')) $('#magnet').value = '';
 };
 $('#pasteMagnet').onclick = async () => { try { $('#magnet').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
@@ -819,7 +825,19 @@ $('#e_save').onclick = async () => { if (E && await act('enc_cfg', { ...E }, '�
 $('#e_subwait').onclick = async () => { await act('enc_sub_wait', {}, 'منتظرم؛ فایل زیرنویس رو توی چت بفرست'); };
 $('#e_subclr').onclick = async () => { await act('enc_sub_clear', {}, 'زیرنویس‌ها پاک شد'); };
 
+/* ---------------- انکود لینک/مگنت ---------------- */
+let encInit = false;
+function renderEncUrl() {
+  const E = S && S.enc, ok = !!(E && E.on);
+  $('#encRow').style.display = ok ? '' : 'none'; $('#magEncRow').style.display = ok ? '' : 'none';
+  if (!ok) return;
+  if (!encInit) { $('#urlEnc').checked = !!E.auto; $('#magEnc').checked = !!E.auto; encInit = true; }
+  const b = $('#encAutoBtn'); b.textContent = E.auto ? '📌 همیشه: روشن' : '📌 همیشه: خاموش';
+  b.onclick = async () => { const r = await act('enc_auto', { on: !E.auto }, E.auto ? 'انکود خودکار خاموش شد' : 'انکود خودکار روشن شد'); if (r && !E.auto) { $('#urlEnc').checked = true; $('#magEnc').checked = true; } else if (r) { $('#urlEnc').checked = false; $('#magEnc').checked = false; } };
+}
+
 function renderAll() {
+  renderEncUrl();
   renderEnc(); renderTor(); renderHome(); renderQueue(); renderLinks(); renderChat(); fillSettings(false); renderSettingsExtra();
   window.__tl && window.__tl.refresh();
 }
