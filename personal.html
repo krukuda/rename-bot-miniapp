@@ -190,7 +190,9 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
     <div class="card"><h2>🪪 وضعیت و سقف‌های تو</h2><div id="lims"></div></div>
     <div class="card">
       <h2>⬇️ دانلود از لینک و ارسال در تلگرام</h2>
-      <textarea id="urls" class="mono" placeholder="هر خط یک لینک (مستقیم یا Google Drive)" rows="3"></textarea>
+      <textarea id="urls" class="mono" placeholder="هر خط یک لینک (مستقیم، Google Drive، یوتیوب یا اینستاگرام)" rows="3"></textarea>
+      <div class="row" id="ytRow" style="margin-top:8px;display:none"><span class="grow">▶️ یوتیوب / اینستاگرام — کیفیت</span><select id="ytQ"><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option><option value="360">360p</option><option value="audio">🎵 فقط صدا (MP3)</option></select></div>
+      <div class="muted" id="ytHint" style="display:none;margin-top:6px;font-size:12px"></div>
       <div class="row" id="encRow" style="margin-top:8px;display:none"><label class="row grow" style="gap:8px;cursor:pointer"><input type="checkbox" id="urlEnc"><span>🎞 انکود بعد از دانلود</span></label><button class="sm" id="encAutoBtn"></button></div>
       <div class="row" style="margin-top:8px"><button class="pri grow" id="goUrl">دانلود و ارسال</button><button id="pasteUrl">📋 چسباندن</button></div>
       <div class="hint">فایل با تنظیمات تو (الگوی نام، تامبنیل، کپشن) توی همین چت با ربات فرستاده می‌شه. سقف حجم هر لینک بالا (در «سقف‌های تو») نوشته شده.</div>
@@ -539,13 +541,22 @@ function renderHome() {
   } else jc.style.display = 'none';
 }
 window.stopJob = async () => { await act('job_stop', {}, 'درخواست توقف ارسال شد'); };
+function _ytSync() {
+  const v = $('#urls').value, on = /(youtube\.com|youtu\.be|instagram\.com)/i.test(v), y = (S && S.yt) || {};
+  $('#ytRow').style.display = on && y.on ? '' : 'none';
+  const h = $('#ytHint');
+  if (on && !y.on) { h.textContent = '▶️ دانلود یوتیوب/اینستاگرام برای تو فعال نیست.'; h.style.display = ''; }
+  else if (on && y.on && y.min) { h.textContent = `سقف هر ویدیو ${y.min} دقیقه • امروز ${y.left} دانلود باقی مونده`; h.style.display = ''; }
+  else h.style.display = 'none';
+}
+$('#urls').addEventListener('input', _ytSync);
 $('#goUrl').onclick = async () => {
   const urls = $('#urls').value.split(/\s+/).filter(x => /^https?:\/\//i.test(x));
   if (!urls.length) return toast('لینک معتبری نیست', true);
-  const r = await act('get_url', { urls, enc: !!$('#urlEnc').checked }, null);
+  const r = await act('get_url', { urls, enc: !!$('#urlEnc').checked, q: ($('#ytQ') || {}).value || '720' }, null);
   if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#urls').value = ''; }
 };
-$('#pasteUrl').onclick = async () => { try { $('#urls').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
+$('#pasteUrl').onclick = async () => { try { $('#urls').value = (await navigator.clipboard.readText()) || ''; _ytSync(); } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
 /* ---------------- صف ---------------- */
 let qPatDirty = false;
@@ -816,7 +827,7 @@ function renderEncUrl() {
 }
 
 function renderAll() {
-  renderEncUrl();
+  renderEncUrl(); _ytSync();
   renderEnc(); renderTor(); renderHome(); renderQueue(); renderLinks(); renderChat(); renderNav(); fillSettings(false); renderSettingsExtra();
   window.__tl && window.__tl.refresh();
 }
