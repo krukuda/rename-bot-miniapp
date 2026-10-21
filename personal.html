@@ -94,7 +94,7 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
 .lim:last-child{border-bottom:0}.lim span:last-child{color:var(--hint);text-align:end}
 
 /* ===== انکود / هاردساب ===== */
-.nav button{padding:4px 2px;font-size:10.5px}
+.nav button{padding:4px 2px;font-size:10.5px;min-width:0}
 .nav button span{font-size:19px}
 .fld{display:block;margin:12px 0 6px;font-size:12.5px;color:var(--hint)}
 .fld b{color:var(--tx)}
@@ -190,15 +190,25 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
     <div class="card"><h2>🪪 وضعیت و سقف‌های تو</h2><div id="lims"></div></div>
     <div class="card">
       <h2>⬇️ دانلود از لینک و ارسال در تلگرام</h2>
-      <textarea id="urls" class="mono" placeholder="هر خط یک لینک (مستقیم، Google Drive، یوتیوب یا اینستاگرام)" rows="3"></textarea>
-      <div class="row" id="ytRow" style="margin-top:8px;display:none"><span class="grow">▶️ یوتیوب / اینستاگرام — کیفیت</span><select id="ytQ"><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option><option value="360">360p</option><option value="audio">🎵 فقط صدا (MP3)</option></select></div>
-      <div class="muted" id="ytHint" style="display:none;margin-top:6px;font-size:12px"></div>
+      <textarea id="urls" class="mono" placeholder="هر خط یک لینک (مستقیم یا Google Drive)" rows="3"></textarea>
       <div class="row" id="encRow" style="margin-top:8px;display:none"><label class="row grow" style="gap:8px;cursor:pointer"><input type="checkbox" id="urlEnc"><span>🎞 انکود بعد از دانلود</span></label><button class="sm" id="encAutoBtn"></button></div>
       <div class="row" style="margin-top:8px"><button class="pri grow" id="goUrl">دانلود و ارسال</button><button id="pasteUrl">📋 چسباندن</button></div>
       <div class="hint">فایل با تنظیمات تو (الگوی نام، تامبنیل، کپشن) توی همین چت با ربات فرستاده می‌شه. سقف حجم هر لینک بالا (در «سقف‌های تو») نوشته شده.</div>
     </div>
   </section>
 
+  <!-- ============ سوشال ============ -->
+  <section id="p-social" class="page">
+    <div class="card" id="jobcard2" style="display:none"></div>
+    <div class="card">
+      <h2>▶️ دانلود از شبکه‌های اجتماعی</h2>
+      <div class="hint" style="margin-bottom:8px">یوتیوب (ویدیو و شورتز) و اینستاگرام (ریلز و پست ویدیویی). لینک رو بچسبون، کیفیت رو انتخاب کن؛ ویدیو توی همین چت تلگرام فرستاده می‌شه.</div>
+      <textarea id="soUrls" class="mono" placeholder="هر خط یک لینک یوتیوب یا اینستاگرام" rows="3"></textarea>
+      <div class="row" style="margin-top:8px"><span class="grow">کیفیت</span><select id="soQ"><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option><option value="360">360p</option><option value="audio">🎵 فقط صدا (MP3)</option></select></div>
+      <div class="row" style="margin-top:8px"><button class="pri grow" id="soGo">⬇️ دانلود</button><button class="sm" id="soPaste">📋 چسباندن</button></div>
+      <div class="hint" id="soInfo" style="margin-top:8px"></div>
+    </div>
+  </section>
   <!-- ============ صف ============ -->
   <section id="p-queue" class="page">
     <div class="card"><h2>📥 فایل‌های توی صف</h2><div id="qlist"></div></div>
@@ -335,6 +345,7 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
 </main>
 <nav class="nav" id="nav">
   <button data-p="home" class="on"><span>🏠</span>خانه</button>
+  <button data-p="social"><span>▶️</span>سوشال</button>
   <button data-p="queue"><span>📥</span>صف<i class="n" id="qn_b" style="display:none"></i></button>
   <button data-p="set"><span>⚙️</span>تنظیمات</button>
   <button data-p="links" id="nav_links"><span>🔗</span>لینک‌ها</button>
@@ -539,24 +550,45 @@ function renderHome() {
       <div class="hint">${j.unit === 's' ? `${fmtDur(j.cur)} / ${fmtDur(j.tot)} ${j.x ? `• ⚡ ${j.x}×` : ''}` : `${j.tot ? `${fmtSize(j.cur)} / ${fmtSize(j.tot)}` : ''} ${j.spd ? `• 🚀 ${fmtSize(j.spd)}/s` : ''}`} ${j.eta ? `• ⏱ ${fmtDur(j.eta)}` : ''}</div>
       <div class="row" style="margin-top:8px"><button class="bad" onclick="stopJob()">⛔ توقف</button></div>`;
   } else jc.style.display = 'none';
+  _soJob();
 }
 window.stopJob = async () => { await act('job_stop', {}, 'درخواست توقف ارسال شد'); };
-function _ytSync() {
-  const v = $('#urls').value, on = /(youtube\.com|youtu\.be|instagram\.com)/i.test(v), y = (S && S.yt) || {};
-  $('#ytRow').style.display = on && y.on ? '' : 'none';
-  const h = $('#ytHint');
-  if (on && !y.on) { h.textContent = '▶️ دانلود یوتیوب/اینستاگرام برای تو فعال نیست.'; h.style.display = ''; }
-  else if (on && y.on && y.min) { h.textContent = `سقف هر ویدیو ${y.min} دقیقه • امروز ${y.left} دانلود باقی مونده`; h.style.display = ''; }
-  else h.style.display = 'none';
+/* ---------------- سوشال (یوتیوب / اینستاگرام) ---------------- */
+const SO_RE = /^https?:\/\/(?:[\w-]+\.)*(?:youtube\.com|youtu\.be|youtube-nocookie\.com|instagram\.com)(?:[\/?#:]|$)/i;
+function soSync() {
+  const y = (S && S.yt) || null, info = $('#soInfo'), go = $('#soGo');
+  if (!y) { info.textContent = ''; go.disabled = false; return; }
+  go.disabled = !y.on;
+  const t = [];
+  if (!y.on) t.push('▶️ دانلود یوتیوب/اینستاگرام برای تو فعال نیست.');
+  else {
+    if (y.min) t.push(`سقف هر ویدیو ${y.min} دقیقه • امروز ${y.left} دانلود باقی مونده`);
+    if (y.ck === false) t.push('🍪 کوکی ندارم؛ یوتیوب معمولاً IP کولب رو بلاک می‌کنه. با /cookies توی ربات کوکی بده.');
+    else if (y.ck === true) t.push('🍪 کوکی دارم.');
+  }
+  info.textContent = t.join('\n'); info.style.whiteSpace = 'pre-line';
 }
-$('#urls').addEventListener('input', _ytSync);
+function _soJob() {
+  const a = $('#jobcard'), b = $('#jobcard2');
+  if (!a || !b) return;
+  b.style.display = a.style.display; b.innerHTML = a.innerHTML;
+}
+$('#soGo').onclick = async () => {
+  const all = $('#soUrls').value.split(/\s+/).filter(x => /^https?:\/\//i.test(x));
+  const urls = all.filter(x => SO_RE.test(x));
+  if (!urls.length) return toast('لینک یوتیوب یا اینستاگرام بذار', true);
+  if (urls.length < all.length) toast(`${all.length - urls.length} لینک نامربوط نادیده گرفته شد`, true);
+  const r = await act('get_url', { urls, enc: false, q: $('#soQ').value }, null);
+  if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#soUrls').value = ''; }
+};
+$('#soPaste').onclick = async () => { try { $('#soUrls').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست', true); } };
 $('#goUrl').onclick = async () => {
   const urls = $('#urls').value.split(/\s+/).filter(x => /^https?:\/\//i.test(x));
   if (!urls.length) return toast('لینک معتبری نیست', true);
-  const r = await act('get_url', { urls, enc: !!$('#urlEnc').checked, q: ($('#ytQ') || {}).value || '720' }, null);
+  const r = await act('get_url', { urls, enc: !!$('#urlEnc').checked }, null);
   if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#urls').value = ''; }
 };
-$('#pasteUrl').onclick = async () => { try { $('#urls').value = (await navigator.clipboard.readText()) || ''; _ytSync(); } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
+$('#pasteUrl').onclick = async () => { try { $('#urls').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
 /* ---------------- صف ---------------- */
 let qPatDirty = false;
@@ -827,7 +859,7 @@ function renderEncUrl() {
 }
 
 function renderAll() {
-  renderEncUrl(); _ytSync();
+  renderEncUrl(); soSync();
   renderEnc(); renderTor(); renderHome(); renderQueue(); renderLinks(); renderChat(); renderNav(); fillSettings(false); renderSettingsExtra();
   window.__tl && window.__tl.refresh();
 }
