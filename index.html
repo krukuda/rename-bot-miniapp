@@ -302,18 +302,38 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
       <div class="card">
         <h2>🎞 انکود ویدیو</h2>
         <div class="hint" id="e_q"></div>
-        <label class="fld">پروفایل آماده</label>
+        <label class="fld">پروفایل آماده (هدف را انتخاب کن؛ بعدش می‌تونی هرکدوم رو تغییر بدی)</label>
         <div class="row wrap" id="e_prof"></div>
-        <label class="fld">کدک</label><div class="seg" id="e_codec"></div>
-        <label class="fld">رزولوشن (فقط کوچک‌کردن؛ بزرگ نمی‌شه)</label><div class="seg" id="e_res"></div>
-        <label class="fld">کیفیت CRF: <b id="e_crfv"></b> <span class="hint">(کمتر = بهتر و حجیم‌تر)</span></label>
-        <input type="range" class="rng" id="e_crf" min="16" max="32" step="1">
-        <label class="fld">سرعت انکود (کندتر = حجم کمتر / کیفیت بهتر)</label><select class="sel" id="e_preset"></select>
-        <label class="fld">صدا</label><div class="seg" id="e_abit"></div>
-        <label class="fld">زبان صدا</label><div class="seg" id="e_alang"></div>
-        <label class="fld">قالب خروجی</label><div class="seg" id="e_cont"></div>
-        <div class="hint" id="e_h265" style="display:none">برای H.265 ربات خودکار CRF را ۵ تا بالاتر می‌برد تا کیفیت هم‌ارز H.264 بماند.</div>
+        <div class="hint" id="e_pdesc"></div>
       </div>
+      <div class="card">
+        <h2>تنظیمات اصلی</h2>
+        <label class="fld">کدک</label><div class="seg" id="e_codec"></div>
+        <div class="hint" id="e_codec_hint"></div>
+        <label class="fld">حالت کیفیت</label><div class="seg" id="e_rc"></div>
+        <div class="hint" id="e_rc_hint"></div>
+        <div id="e_crfrow"><label class="fld">کیفیت CRF: <b id="e_crfv"></b> <span class="hint">(کمتر = کیفیت بهتر و حجم بیشتر)</span></label>
+          <input type="range" class="rng" id="e_crf" min="14" max="35" step="1"></div>
+        <div id="e_vbitrow" style="display:none"><label class="fld">بیت‌ریت هدف ویدیو</label><select class="sel" id="e_vbit"></select></div>
+        <label class="fld">سرعت انکود</label><select class="sel" id="e_preset"></select>
+        <div class="hint" id="e_preset_hint"></div>
+        <label class="fld">رزولوشن (فقط کوچک‌کردن؛ بزرگ نمی‌شه)</label><div class="seg" id="e_res"></div>
+        <label class="fld">قالب خروجی</label><div class="seg" id="e_cont"></div>
+        <div class="hint" id="e_cont_hint"></div>
+      </div>
+      <details class="card" id="e_adv">
+        <summary><b>تنظیمات پیشرفته</b> <span class="hint">فریم، عمق رنگ، تیون، صدا</span></summary>
+        <label class="fld">نرخ فریم (فقط کاهش؛ بالاتر از منبع بزرگ نمی‌شه)</label><div class="seg" id="e_fps"></div>
+        <label class="fld">عمق رنگ</label><div class="seg" id="e_pix"></div>
+        <div class="hint" id="e_pix_hint"></div>
+        <label class="fld">تیون</label><select class="sel" id="e_tune"></select>
+        <div class="hint" id="e_tune_hint"></div>
+        <label class="fld">کدک صدا</label><div class="seg" id="e_acodec"></div>
+        <div class="hint" id="e_acodec_hint"></div>
+        <label class="fld">بیت‌ریت صدا</label><div class="seg" id="e_abit"></div>
+        <label class="fld">زبان صدا</label><div class="seg" id="e_alang"></div>
+        <div class="hint" id="e_gpu_hint"></div>
+      </details>
       <div class="card">
         <h2>🔤 هاردساب (زیرنویس چسبیده روی تصویر)</h2>
         <div class="seg" id="e_sub"></div>
@@ -335,12 +355,13 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
           <div class="sw"><span>متن ضخیم (Bold)</span><button class="tg" id="e_bold"></button></div>
           <div class="pvbox" id="e_pv"><span id="e_pvt">این یک نمونه زیرنویس فارسی است.</span></div>
         </div>
-        <div class="warn" id="e_capw" style="display:none"></div>
       </div>
-      <div class="card">
+            <div class="card">
+        <div class="warn" id="e_warn" style="display:none"></div>
+        <div class="warn" id="e_capw" style="display:none"></div>
         <div class="row wrap"><button class="pri grow" id="e_run">🎞 انکود صف</button><button class="grow" id="e_save">💾 ذخیره‌ی پیش‌فرض</button></div>
         <div class="hint" id="e_hint"></div>
-        <div class="hint">انکود روی CPU سرور کنده و ممکنه از مدت ویدیو هم بیشتر طول بکشه؛ فقط یک انکود هم‌زمان اجرا می‌شه. زیرنویس نرمِ داخل فایل در MP4 حذف می‌شه (برای حفظش MKV بگیر).</div>
+        <div class="hint">انکود روی GPU (NVENC) وقتی انجام می‌شه که تیون و ۱۰-بیتی نباشه؛ در غیر این صورت CPU. مدت ویدیو و تعداد انکود روزانه طبق تنظیمات ربات محدود می‌شه.</div>
       </div>
     </div>
   </section>
@@ -828,38 +849,89 @@ $('#goMagnet').onclick = async () => {
 $('#pasteMagnet').onclick = async () => { try { $('#magnet').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
 /* ---------------- انکود / هاردساب ---------------- */
-const ENC_DEF = { codec: 'h264', crf: 23, preset: 'veryfast', res: 'orig', abit: 128, cont: 'mp4', sub: 'none', sublang: 'fa', alang: 'first', font: 'Vazirmatn', size: 24, color: '#FFFFFF', outline: 2, pos: 'bottom', bold: false };
-const ENC_PROF = {
-  lite: ['📱 سبک (۷۲۰p کم‌حجم)', { codec: 'h264', crf: 27, preset: 'veryfast', res: '720', abit: 96 }],
-  mid: ['⚖️ متعادل (۱۰۸۰p)', { codec: 'h264', crf: 23, preset: 'veryfast', res: '1080', abit: 128 }],
-  hq: ['💎 کیفیت (H.265)', { codec: 'h265', crf: 22, preset: 'medium', res: 'orig', abit: 192 }],
-};
+const ENC_DEF = { codec: 'h264', crf: 23, preset: 'veryfast', res: 'orig', abit: 128, cont: 'mp4', sub: 'none', sublang: 'fa', alang: 'first', font: 'Vazirmatn', size: 24, color: '#FFFFFF', outline: 2, pos: 'bottom', bold: false, rc: 'crf', vbit: 2500, fps: 'orig', pix: 8, tune: 'none', acodec: 'aac' };
 const ENC_COLORS = ['#FFFFFF', '#FFEB3B', '#00E5FF', '#B2FF59', '#FF9800'];
 const ENC_FONTS = ['Vazirmatn', 'DejaVu Sans'];
-let E = null, encDirty = false, encBuilt = false;
-function encTouch() { encDirty = true; renderEncDyn(); }
+const ENC_CODEC_FA = { h264: 'H.264', h265: 'H.265', av1: 'AV1' };
+const ENC_CODEC_TXT = { h264: 'سازگارترین؛ تقریباً روی همه‌ی دستگاه‌ها پخش می‌شه.', h265: 'حجم حدود نصف H.264 با کیفیت مشابه؛ بعضی پخش‌کننده‌های قدیمی پخش نمی‌کنن.', av1: 'کم‌حجم‌ترین؛ انکود کندتره و پخش روی بعضی دستگاه‌ها هنوز محدوده.' };
+const ENC_RC_FA = { crf: 'کیفیت ثابت (CRF)', bitrate: 'بیت‌ریت هدف' };
+const ENC_RC_TXT = { crf: 'کیفیت تقریباً یکنواخت؛ حجم بسته به محتوا فرق می‌کنه.', bitrate: 'حجم قابل پیش‌بینیه؛ کیفیت بسته به صحنه نوسان داره (تک‌گذر).' };
+const ENC_RES_FA = { orig: 'اصلی', '1080': '1080p', '720': '720p', '480': '480p', '360': '360p' };
+const ENC_FPS_FA = { orig: 'اصلی', '30': '30 fps', '24': '24 fps' };
+const ENC_PIX_FA = { 8: '۸-بیت (سازگار)', 10: '۱۰-بیت' };
+const ENC_TUNE_FA = { none: 'بدون تیون', film: 'فیلم', animation: 'انیمیشن', grain: 'حفظ دانه‌ی فیلم', psnr: 'PSNR (ارقام، نه ظاهر)' };
+const ENC_TUNE_TXT = { none: 'تنظیمات پیش‌فرض کدک.', film: 'برای فیلم با جزئیات؛ دیبلاک ملایم‌تر.', animation: 'برای انیمیشن و کارتون (لبه‌های تیز، رنگ یکنواخت).', grain: 'دانه‌ی فیلم رو نگه می‌داره؛ حجم بیشتر.', psnr: 'روی شاخص PSNR بهینه می‌شه؛ ظاهر لزوماً بهتر نیست.' };
+const ENC_ACODEC_FA = { aac: 'AAC', opus: 'Opus' };
+const ENC_ACODEC_TXT = { aac: 'سازگار با MP4 و MKV.', opus: 'در بیت‌ریت پایین کیفیت بهتری داره؛ فقط با MKV.' };
+const ENC_SPEED_TXT = 'کندتر = حجم کمتر و کیفیت بهتر، ولی زمان انکود بیشتر.';
+let E = null, encDirty = false, encBuilt = false, encQueueOK = false;
+const encL = () => (S && S.enc && S.enc.lists) || null;
+const encA = () => (S && S.enc && S.enc.avail) || {};
 function fillEnc(force) {
   const c = S && S.enc && S.enc.cfg; if (!c) return;
   if (E && encDirty && !force) return;
   E = { ...ENC_DEF, ...c }; encDirty = false; buildEnc();
 }
+function encTouch() { encDirty = true; renderEncDyn(); }
+/* همون قواعد ربات، اینجا فقط برای این‌که کاربر ترکیب ناسازگار انتخاب نکنه (ربات هم دوباره چک می‌کنه) */
+function encNorm() {
+  const L = encL(), A = encA();
+  if (!L) return;
+  if (!A[E.codec]) E.codec = (L.codecs || []).find(c => A[c]) || E.codec;
+  const cr = L.crf[E.codec] || [14, 35];
+  E.crf = Math.min(Math.max(+E.crf, cr[0]), cr[1]);
+  if (E.codec === 'h264' && +E.pix === 10) E.pix = 8;
+  const tunes = ['none', ...(L.tune[E.codec] || [])];
+  if (!tunes.includes(E.tune)) E.tune = 'none';
+  if (E.cont === 'mp4' && E.acodec === 'opus' && +E.abit !== 0) E.acodec = 'aac';
+  if (!L.vbit.includes(+E.vbit)) E.vbit = L.vbit.reduce((b, x) => Math.abs(x - E.vbit) < Math.abs(b - E.vbit) ? x : b, L.vbit[0]);
+  if (!L.presets.includes(E.preset)) E.preset = 'veryfast';
+  E.abit = +E.abit; E.pix = +E.pix; E.crf = +E.crf; E.vbit = +E.vbit;
+}
+function encProblems() {
+  const p = [], A = encA();
+  if (E && !A[E.codec]) p.push(`${ENC_CODEC_FA[E.codec] || E.codec} روی این سرور نیست.`);
+  if (E && E.codec === 'h264' && +E.pix === 10) p.push('۱۰-بیتی فقط برای H.265 و AV1 هست.');
+  if (E && E.acodec === 'opus' && E.cont === 'mp4' && +E.abit !== 0) p.push('صدای Opus فقط با قالب MKV کار می‌کنه.');
+  return p;
+}
 function buildEnc() {
-  const set = (k, v, num) => { E[k] = num ? +v : v; encTouch(); };
-  $('#e_prof').innerHTML = Object.entries(ENC_PROF).map(([k, [t]]) => `<button class="sm" data-k="${k}">${t}</button>`).join('');
-  $$('#e_prof button').forEach(b => b.onclick = () => { Object.assign(E, ENC_PROF[b.dataset.k][1]); haptic(); buildEnc(); encDirty = true; renderEncDyn(); });
-  const caps = (S && S.enc && S.enc.caps) || {};
-  seg($('#e_codec'), [['h264', 'H.264'], ['h265', 'H.265']].filter(([v]) => v === 'h264' ? caps.x264 !== false : caps.x265 !== false), E.codec, v => set('codec', v));
-  seg($('#e_res'), [['orig', 'اصلی'], ['1080', '1080p'], ['720', '720p'], ['480', '480p'], ['360', '360p']], E.res, v => set('res', v));
-  seg($('#e_abit'), [[0, 'کپی'], [64, '64k'], [96, '96k'], [128, '128k'], [192, '192k']], E.abit, v => set('abit', v, true));
-  seg($('#e_alang'), [['first', 'اولین'], ['fa', 'فارسی'], ['en', 'انگلیسی'], ['ja', 'ژاپنی']], E.alang, v => set('alang', v));
-  seg($('#e_cont'), [['mp4', 'MP4'], ['mkv', 'MKV']], E.cont, v => set('cont', v));
-  $('#e_preset').innerHTML = ['ultrafast', 'superfast', 'veryfast', 'faster', 'fast', 'medium', 'slow'].map(p => `<option value="${p}">${p}</option>`).join('');
+  const L = encL(), A = encA();
+  const set = (k, v, num) => { E[k] = num ? +v : v; encNorm(); encTouch(); buildEnc(); };
+  const profs = (S && S.enc && S.enc.profiles) || [];
+  $('#e_prof').innerHTML = profs.map(p => `<button class="sm" data-k="${p.key}" ${p.req && !A[p.req] ? 'disabled' : ''}>${p.fa}</button>`).join('');
+  $$('#e_prof button').forEach(b => b.onclick = () => {
+    const p = profs.find(x => x.key === b.dataset.k); if (!p) return;
+    Object.assign(E, p.v); encNorm(); encDirty = true; haptic();
+    $('#e_pdesc').textContent = p.desc; buildEnc(); renderEncDyn();
+    $$('#e_prof button').forEach(x => x.classList.toggle('on', x === b));
+  });
+  const codecs = ((L && L.codecs) || ['h264', 'h265']).filter(c => A[c] !== false);
+  seg($('#e_codec'), codecs.map(c => [c, ENC_CODEC_FA[c] || c]), E.codec, v => set('codec', v));
+  seg($('#e_rc'), ((L && L.rc) || ['crf', 'bitrate']).map(r => [r, ENC_RC_FA[r]]), E.rc, v => set('rc', v));
+  const cr = (L && L.crf[E.codec]) || [14, 35];
+  $('#e_crf').min = cr[0]; $('#e_crf').max = cr[1]; $('#e_crf').value = E.crf;
+  $('#e_crf').oninput = e => { E.crf = +e.target.value; encDirty = true; renderEncDyn(); };
+  $('#e_vbit').innerHTML = ((L && L.vbit) || []).map(v => `<option value="${v}">${v} kbps</option>`).join('');
+  $('#e_vbit').value = E.vbit; $('#e_vbit').onchange = e => set('vbit', e.target.value, true);
+  $('#e_preset').innerHTML = ((L && L.presets) || []).map(p => `<option value="${p}">${p}</option>`).join('');
   $('#e_preset').value = E.preset; $('#e_preset').onchange = e => set('preset', e.target.value);
-  $('#e_crf').value = E.crf; $('#e_crf').oninput = e => set('crf', e.target.value, true);
+  seg($('#e_res'), ((L && L.res) || []).map(r => [r, ENC_RES_FA[r] || r]), E.res, v => set('res', v));
+  seg($('#e_cont'), [['mp4', 'MP4'], ['mkv', 'MKV']], E.cont, v => set('cont', v));
+  seg($('#e_fps'), ((L && L.fps) || []).map(f => [f, ENC_FPS_FA[f] || f]), E.fps, v => set('fps', v));
+  const pixes = E.codec === 'h264' ? [8] : ((L && L.pix) || [8, 10]);
+  seg($('#e_pix'), pixes.map(p => [p, ENC_PIX_FA[p] || p]), E.pix, v => set('pix', v, true));
+  const tunes = ['none', ...((L && L.tune[E.codec]) || [])];
+  $('#e_tune').innerHTML = tunes.map(t => `<option value="${t}">${ENC_TUNE_FA[t] || t}</option>`).join('');
+  $('#e_tune').value = E.tune; $('#e_tune').onchange = e => set('tune', e.target.value);
+  const acs = (E.cont === 'mp4' && +E.abit !== 0) ? ['aac'] : ((L && L.acodec) || ['aac', 'opus']);
+  seg($('#e_acodec'), acs.map(a => [a, ENC_ACODEC_FA[a] || a]), E.acodec, v => set('acodec', v));
+  seg($('#e_abit'), ((L && L.abit) || [0, 64, 96, 128, 192]).map(b => [b, b === 0 ? 'کپی' : b + 'k']), E.abit, v => set('abit', v, true));
+  seg($('#e_alang'), [['first', 'اولین'], ['fa', 'فارسی'], ['en', 'انگلیسی'], ['ja', 'ژاپنی']], E.alang, v => set('alang', v));
   seg($('#e_sub'), [['none', 'بدون زیرنویس'], ['auto', 'داخلی (خودکار)'], ['ext', 'فایل خارجی']], E.sub, v => set('sub', v));
   seg($('#e_sublang'), [['fa', 'فارسی'], ['en', 'انگلیسی'], ['ar', 'عربی'], ['first', 'اولین']], E.sublang, v => set('sublang', v));
   seg($('#e_font'), ENC_FONTS.map(f => [f, f]), E.font, v => set('font', v));
-  $('#e_size').value = E.size; $('#e_size').oninput = e => set('size', e.target.value, true);
+  $('#e_size').value = E.size; $('#e_size').oninput = e => { E.size = +e.target.value; encDirty = true; renderEncDyn(); };
   $('#e_colors').innerHTML = ENC_COLORS.map(c => `<button class="swc ${c === E.color ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('');
   $$('#e_colors button').forEach(b => b.onclick = () => { $$('#e_colors button').forEach(x => x.classList.toggle('on', x === b)); haptic(); set('color', b.dataset.c); });
   seg($('#e_outline'), [0, 1, 2, 3, 4].map(x => [x, x]), E.outline, v => set('outline', v, true));
@@ -870,12 +942,25 @@ function buildEnc() {
 $('#e_bold').onclick = e => { if (!E) return; E.bold = !E.bold; e.currentTarget.classList.toggle('on', E.bold); haptic(); encTouch(); };
 function renderEncDyn() {
   if (!E) return;
+  const L = encL();
   $('#e_crfv').textContent = E.crf; $('#e_sizev').textContent = E.size;
-  $('#e_h265').style.display = E.codec === 'h265' ? '' : 'none';
+  $('#e_crfrow').style.display = E.rc === 'crf' ? '' : 'none';
+  $('#e_vbitrow').style.display = E.rc === 'bitrate' ? '' : 'none';
+  $('#e_rc_hint').textContent = ENC_RC_TXT[E.rc] || '';
+  $('#e_codec_hint').textContent = (ENC_CODEC_TXT[E.codec] || '') + (E.codec === 'h265' ? ' (ربات برای H.265 خودکار CRF +۵ می‌ذاره)' : '');
+  $('#e_preset_hint').textContent = (E.codec === 'av1' && L && L.av1_preset) ? `SVT-AV1 preset ${L.av1_preset[E.preset]} — ${ENC_SPEED_TXT}` : ENC_SPEED_TXT;
+  $('#e_cont_hint').textContent = (E.cont === 'mp4' && +E.abit !== 0) ? 'صدای Opus فقط با MKV؛ با MP4 فقط AAC.' : '';
+  $('#e_pix_hint').textContent = E.codec === 'h264' ? 'H.264 فقط ۸-بیتی داره؛ برای ۱۰-بیت، H.265 یا AV1 رو انتخاب کن.' : '';
+  $('#e_tune_hint').textContent = ENC_TUNE_TXT[E.tune] || '';
+  $('#e_acodec_hint').textContent = ENC_ACODEC_TXT[E.acodec] || '';
+  $('#e_gpu_hint').textContent = (E.tune !== 'none' || +E.pix === 10) ? 'با تیون یا ۱۰-بیتی، انکود روی CPU انجام می‌شه (GPU فقط تنظیمات ۸-بیت و بدون تیون رو داره).' : '';
   $('#e_subauto').style.display = E.sub === 'auto' ? '' : 'none';
   $('#e_subext').style.display = E.sub === 'ext' ? '' : 'none';
   $('#e_style').style.display = E.sub !== 'none' ? '' : 'none';
   $('#e_run').textContent = E.sub !== 'none' ? '🔤 هاردساب + انکود صف' : '🎞 انکود صف';
+  const pr = encProblems();
+  $('#e_warn').style.display = pr.length ? '' : 'none'; $('#e_warn').textContent = pr.join(' ');
+  $('#e_run').disabled = !encQueueOK || pr.length > 0;
   const pv = $('#e_pv'), t = $('#e_pvt');
   pv.classList.toggle('top', E.pos === 'top');
   const px = Math.max(8, E.size * 150 / 288 * 1.15);
@@ -894,24 +979,33 @@ function renderEnc() {
   const q = (S.q || []), vids = q.filter(it => it.k === 'video' || /\.(mkv|mp4|avi|mov|webm|m4v|ts|wmv|flv|mpg|mpeg|3gp)$/i.test(it.name || '')).length;
   const sess = S.sess, busy = !!(sess && sess.busy);
   $('#e_q').innerHTML = q.length ? `📥 ${q.length} فایل توی صفه (${vids} ویدیو). همه با تنظیمات پایین انکود می‌شن.` : 'صف خالیه؛ اول ویدیو رو برای ربات بفرست (یا /batch برای چند فایل).';
-  $('#e_run').disabled = !vids || busy;
+  encQueueOK = !!vids && !busy;
+  $('#e_run').disabled = !encQueueOK || encProblems().length > 0;
   const subs = (sess && sess.subs) || [];
   $('#e_subs').innerHTML = subs.length ? subs.map(n => `<div class="item"><span>📄</span><div class="nm">${esc(n)}</div></div>`).join('') : '<div class="hint">هنوز زیرنویسی نفرستادی.</div>';
   $('#e_subwait').textContent = sess && sess.subwait ? '⏳ منتظر فایل زیرنویس توی چت…' : '📎 منتظر فایل زیرنویس باش';
   $('#e_subwait').disabled = !(sess && !busy);
-  const w = []; const caps = N.caps || {};
+  const w = []; const caps = N.caps || {}, av = N.avail || {};
   if (caps.ass === false) w.push('ffmpeg این سرور libass نداره؛ هاردساب کار نمی‌کنه.');
-  if (caps.x265 === false) w.push('H.265 روی این سرور نیست.');
+  if (av.h264 === false) w.push('H.264 روی این سرور نیست.');
+  if (av.h265 === false) w.push('H.265 روی این سرور نیست.');
+  if (av.av1 === false) w.push('AV1 روی این سرور نیست (libsvtav1 یا NVENC AV1 با تست واقعی پیدا نشد).');
+  else if (av.av1_gpu) w.push('AV1 با GPU (NVENC) هم فعاله.');
   $('#e_capw').style.display = w.length ? '' : 'none'; $('#e_capw').textContent = w.join(' ');
   $('#e_hint').textContent = [N.cap_min ? `سقف مدت هر ویدیو: ${N.cap_min} دقیقه` : '', N.cap_n ? `${N.left} از ${N.cap_n} انکود امروز باقی‌مانده` : ''].filter(Boolean).join(' • ');
 }
 $('#e_run').onclick = async () => {
   if (!E) return;
+  const pr = encProblems(); if (pr.length) return toast(pr[0], true);
   if (E.sub === 'ext' && !(((S && S.sess && S.sess.subs) || []).length)) return toast('اول فایل زیرنویس رو توی چت برای ربات بفرست', true);
   const r = await act('queue_run', { action: 'enc', enc: { ...E } }, 'شروع شد — پیشرفت رو توی خانه ببین');
   if (r) go('home');
 };
-$('#e_save').onclick = async () => { if (E && await act('enc_cfg', { ...E }, '✅ به‌عنوان پیش‌فرض ذخیره شد')) encDirty = false; };
+$('#e_save').onclick = async () => {
+  if (!E) return;
+  const pr = encProblems(); if (pr.length) return toast(pr[0], true);
+  if (await act('enc_cfg', { ...E }, '✅ به‌عنوان پیش‌فرض ذخیره شد')) encDirty = false;
+};
 $('#e_subwait').onclick = async () => { await act('enc_sub_wait', {}, 'منتظرم؛ فایل زیرنویس رو توی چت بفرست'); };
 $('#e_subclr').onclick = async () => { await act('enc_sub_clear', {}, 'زیرنویس‌ها پاک شد'); };
 
