@@ -497,13 +497,22 @@ function setConn(c) {
   else b.className = 'banner';
 }
 async function send(obj) {
+  // v38: 429 و 5xx با backoff کوتاه دوباره فرستاده می‌شن. همون پیام (همون n) دوباره رمزنگاری می‌شه؛
+  // ربات n تکراری رو نادیده می‌گیره، پس اگه تلاش قبلی ذخیره شده بوده، دستور دوبار اجرا نمی‌شه.
   nonce = Math.max(nonce + 1, Date.now() * 1000);
   obj.n = nonce; obj.i = tg ? tg.initData : '';
-  let r;
-  try { r = await fetch(`${RELAY}/${UP}`, { method: 'POST', body: await sealFrame(obj, UP) }); }
-  catch (e) { postFail = true; throw new Error('رله در دسترس نیست'); }
-  if (!r.ok) { postFail = true; throw new Error('رله ' + r.status); }
-  postFail = false;
+  const body = await sealFrame(obj, UP);
+  let msg = 'رله در دسترس نیست';
+  for (let a = 0; a < 3; a++) {
+    let r = null;
+    try { r = await fetch(`${RELAY}/${UP}`, { method: 'POST', body }); } catch (e) { r = null; }
+    if (r && r.ok) { postFail = false; return; }
+    if (r && r.status !== 429 && r.status < 500) { postFail = true; throw new Error('رله ' + r.status); }
+    msg = r ? 'رله ' + r.status : 'رله در دسترس نیست';
+    if (a < 2) await new Promise(res => setTimeout(res, (a + 1) * 1500 + Math.random() * 500));
+  }
+  postFail = true;
+  throw new Error(msg);
 }
 function call(c, d, timeout = 25000) {
   return new Promise((res, rej) => {
