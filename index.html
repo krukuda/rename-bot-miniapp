@@ -94,7 +94,7 @@ details summary{cursor:pointer;color:var(--hint);font-size:13px}
 /* ===== انکود / هاردساب ===== */
 .nav button{padding:4px 2px;font-size:10.5px;min-width:0}
 .nav button span{font-size:19px}
-.nav button img.nico{display:block;width:22px;height:22px;margin:0 auto;object-fit:contain;pointer-events:none}
+.nav button img.nico{display:block;width:28px;height:28px;margin:0 auto;object-fit:contain;pointer-events:none}
 .fld{display:block;margin:12px 0 6px;font-size:12.5px;color:var(--hint)}
 .fld b{color:var(--tx)}
 .sel{width:100%;font:inherit;color:var(--tx);background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:42px}
@@ -202,13 +202,23 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
   <section id="p-social" class="page">
     <div class="card" id="jobcard2" style="display:none"></div>
     <div class="card">
-      <h2>▶️ دانلود از شبکه‌های اجتماعی</h2>
-      <div class="hint" style="margin-bottom:8px">یوتیوب (ویدیو و شورتز) و اینستاگرام (ریلز و پست ویدیویی). لینک رو بچسبون، کیفیت رو انتخاب کن؛ ویدیو توی همین چت تلگرام فرستاده می‌شه.</div>
-      <textarea id="soUrls" class="mono" placeholder="هر خط یک لینک یوتیوب یا اینستاگرام" rows="3"></textarea>
-      <div class="row" style="margin-top:8px"><span class="grow">کیفیت</span><select id="soQ"><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option><option value="360">360p</option><option value="audio">🎵 فقط صدا (MP3)</option></select></div>
-      <div class="row" style="margin-top:8px"><button class="pri grow" id="soGo">⬇️ دانلود</button><button class="sm" id="soPaste">📋 چسباندن</button></div>
-      <div class="hint" id="soInfo" style="margin-top:8px"></div>
+      <h2>▶️ یوتیوب (ویدیو و شورتز)</h2>
+      <div class="hint" style="margin-bottom:8px">لینک‌ها رو بچسبون، «🔍 بررسی کیفیت» رو بزن تا کیفیت‌هایی که همین ویدیو داره نشون داده بشه، بعد دانلود کن. ۴K و ۲K فقط وقتی هست که یوتیوب خودش داشته باشه.</div>
+      <textarea id="ytUrls" class="mono" placeholder="هر خط یک لینک یوتیوب" rows="3"></textarea>
+      <div class="row" style="margin-top:8px"><span class="grow">کیفیت</span><select id="ytQ"><option value="2160">2160p (4K)</option><option value="1440">1440p (2K)</option><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option><option value="360">360p</option><option value="audio">🎵 فقط صدا (MP3)</option></select></div>
+      <div class="hint" id="ytInfo" style="margin-top:6px"></div>
+      <div class="row" style="margin-top:8px"><button class="sm" id="ytCheck">🔍 بررسی کیفیت</button><button class="sm" id="ytPaste">📋 چسباندن</button></div>
+      <button class="pri" id="ytGo" style="margin-top:8px;width:100%">⬇️ دانلود یوتیوب</button>
     </div>
+    <div class="card">
+      <h2>📸 اینستاگرام (ریلز و پست ویدیویی)</h2>
+      <div class="hint" style="margin-bottom:8px">اینستاگرام تا ۱۰۸۰p داره. لینک پست یا ریل رو بچسبون و دانلود کن.</div>
+      <textarea id="igUrls" class="mono" placeholder="هر خط یک لینک اینستاگرام" rows="3"></textarea>
+      <div class="row" style="margin-top:8px"><span class="grow">کیفیت</span><select id="igQ"><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option><option value="360">360p</option><option value="audio">🎵 فقط صدا (MP3)</option></select></div>
+      <div class="row" style="margin-top:8px"><button class="sm" id="igPaste">📋 چسباندن</button></div>
+      <button class="pri" id="igGo" style="margin-top:8px;width:100%">⬇️ دانلود اینستاگرام</button>
+    </div>
+    <div class="hint" id="soInfo" style="margin:8px 4px 0"></div>
   </section>
   <!-- ============ صف ============ -->
   <section id="p-queue" class="page">
@@ -578,11 +588,15 @@ async function addAcct() {
   renderDev();
 }
 /* ---------------- سوشال (یوتیوب / اینستاگرام) ---------------- */
-const SO_RE = /^https?:\/\/(?:[\w-]+\.)*(?:youtube\.com|youtu\.be|youtube-nocookie\.com|instagram\.com)(?:[\/?#:]|$)/i;
+const YT_RE = /^https?:\/\/(?:[\w-]+\.)*(?:youtube\.com|youtu\.be|youtube-nocookie\.com)(?:[\/?#:]|$)/i;
+const IG_RE = /^https?:\/\/(?:[\w-]+\.)*instagram\.com(?:[\/?#:]|$)/i;
+const YT_ALL_Q = [['2160', '2160p (4K)'], ['1440', '1440p (2K)'], ['1080', '1080p'], ['720', '720p'], ['480', '480p'], ['360', '360p']];
+const YT_Q_DEFAULT = $('#ytQ').innerHTML;
 function soSync() {
-  const y = (S && S.yt) || null, info = $('#soInfo'), go = $('#soGo');
-  if (!y) { info.textContent = ''; go.disabled = false; return; }
-  go.disabled = !y.on;
+  const y = (S && S.yt) || null, info = $('#soInfo');
+  const btns = ['#ytCheck', '#ytGo', '#igGo'].map(id => $(id));
+  if (!y) { info.textContent = ''; btns.forEach(b => b.disabled = false); return; }
+  btns.forEach(b => b.disabled = !y.on);
   const t = [];
   if (!y.on) t.push('▶️ دانلود یوتیوب/اینستاگرام برای تو فعال نیست.');
   else {
@@ -597,15 +611,47 @@ function _soJob() {
   if (!a || !b) return;
   b.style.display = a.style.display; b.innerHTML = a.innerHTML;
 }
-$('#soGo').onclick = async () => {
-  const all = $('#soUrls').value.split(/\s+/).filter(x => /^https?:\/\//i.test(x));
-  const urls = all.filter(x => SO_RE.test(x));
-  if (!urls.length) return toast('لینک یوتیوب یا اینستاگرام بذار', true);
+function soPick(boxId, re) {
+  const all = $(boxId).value.split(/\s+/).filter(x => /^https?:\/\//i.test(x));
+  const urls = all.filter(x => re.test(x));
   if (urls.length < all.length) toast(`${all.length - urls.length} لینک نامربوط نادیده گرفته شد`, true);
-  const r = await act('get_url', { urls, enc: false, q: $('#soQ').value }, null);
-  if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#soUrls').value = ''; }
+  return urls;
+}
+function resetYt() { $('#ytQ').innerHTML = YT_Q_DEFAULT; $('#ytInfo').textContent = ''; }
+$('#ytUrls').addEventListener('input', resetYt);
+$('#ytCheck').onclick = async () => {
+  const urls = soPick('#ytUrls', YT_RE);
+  if (urls.length !== 1) return toast(urls.length ? 'برای بررسی، فقط یک لینک یوتیوب بذار' : 'لینک یوتیوب بذار', true);
+  const btn = $('#ytCheck'), box = $('#ytInfo');
+  btn.disabled = true; box.textContent = '🔎 در حال خواندن کیفیت‌های این ویدیو…';
+  try {
+    const r = await call('yt_info', { url: urls[0] }, 100000);
+    const avail = YT_ALL_Q.filter(([h]) => (r.qualities || []).includes(h));  // همون فهرست سرور (کیفیت‌های واقعی)
+    $('#ytQ').innerHTML = avail.map(([h, t]) => `<option value="${h}">${t}</option>`).join('') + '<option value="audio">🎵 فقط صدا (MP3)</option>';
+    $('#ytQ').value = avail.length ? avail[0][0] : 'audio';
+    const d = r.duration || 0, pad = n => String(n).padStart(2, '0');
+    const dur = d ? ` • ⏱ ${d >= 3600 ? Math.floor(d / 3600) + ':' + pad(Math.floor(d % 3600 / 60)) : Math.floor(d / 60)}:${pad(d % 60)}` : '';
+    box.style.whiteSpace = 'pre-line';
+    box.textContent = `🎬 ${r.title}${r.uploader ? ' • ' + r.uploader : ''}${dur}\n` +
+      (avail.length ? `کیفیت‌های موجود: ${avail.map(x => x[1]).join('، ')}` : 'کیفیت تصویری پیدا نشد؛ فقط صدا') +
+      (r.live ? '\n⚠️ این ویدیو لایو است' : '') + (r.limit ? `\n⚠️ ${r.limit}` : '');
+  } catch (e) { box.textContent = ''; toast(e.message || 'خطا', true); }
+  finally { btn.disabled = false; }
 };
-$('#soPaste').onclick = async () => { try { $('#soUrls').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست', true); } };
+$('#ytGo').onclick = async () => {
+  const urls = soPick('#ytUrls', YT_RE);
+  if (!urls.length) return toast('لینک یوتیوب بذار', true);
+  const r = await act('get_url', { urls, enc: false, q: $('#ytQ').value, src: 'yt' }, null);
+  if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#ytUrls').value = ''; resetYt(); }
+};
+$('#igGo').onclick = async () => {
+  const urls = soPick('#igUrls', IG_RE);
+  if (!urls.length) return toast('لینک اینستاگرام بذار', true);
+  const r = await act('get_url', { urls, enc: false, q: $('#igQ').value, src: 'ig' }, null);
+  if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#igUrls').value = ''; }
+};
+$('#ytPaste').onclick = async () => { try { $('#ytUrls').value = (await navigator.clipboard.readText()) || ''; resetYt(); } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست', true); } };
+$('#igPaste').onclick = async () => { try { $('#igUrls').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست', true); } };
 $('#goUrl').onclick = async () => {
   const urls = $('#urls').value.split(/\s+/).filter(x => /^https?:\/\//i.test(x));
   if (!urls.length) return toast('لینک معتبری نیست', true);
