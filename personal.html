@@ -1043,21 +1043,49 @@ function refRows(list) {
     return `<div class="ref-row ev-${esc(f.evidence)}"><span class="ref-l">${esc(lab)}</span><b class="ref-v">${esc(v)}</b><span class="ref-e">${esc(ev)}</span></div>`;
   }).join('');
 }
+const REF_BUSY = ['fetching', 'analyzing', 'cancelling'];
 function refRender(r) {
   if (!r) return;
-  const busy = r.state === 'fetching' || r.state === 'analyzing';
-  const names = { idle: rt('آماده', 'Ready'), fetching: rt('در حال دریافت', 'Downloading'), analyzing: rt('در حال تحلیل', 'Analyzing'), done: rt('تموم شد', 'Done'), error: rt('خطا', 'Error'), cancelled: rt('لغو شد', 'Cancelled') };
-  $('#refProg').textContent = (names[r.state] || r.state) + (busy && r.pct ? ' — ' + r.pct + '%' : '') + (r.err ? ' — ' + r.err : '');
+  const busy = REF_BUSY.includes(r.state);
+  const names = { idle: rt('آماده', 'Ready'), fetching: rt('در حال دریافت', 'Downloading'), analyzing: rt('در حال تحلیل', 'Analyzing'), cancelling: rt('در حال لغو', 'Cancelling'), done: rt('تموم شد', 'Done'), error: rt('خطا', 'Error'), cancelled: rt('لغو شد', 'Cancelled') };
+  // v39: اگه درصد معلوم نیست (نبود Content-Length) به‌جای «۰٪» بایت دریافت‌شده نشون می‌ده؛ اگه مدتیه پیشرفتی نبوده، همین رو هم می‌گه
+  const prog = busy && r.pct ? ' — ' + r.pct + '%' : (busy && r.bytes ? ' — ' + (r.bytes / 1048576).toFixed(1) + ' MB' : '');
+  const stall = busy && r.stalled_s >= 30 ? ' — ' + rt('بدون پیشرفت ', 'no progress for ') + r.stalled_s + 's' : '';
+  $('#refProg').textContent = (names[r.state] || r.state) + prog + stall + (r.err ? ' — ' + r.err : '');
   if (r.ref) $('#refReport').innerHTML = `<div class="ref-h">${esc(rt('فایل مرجع', 'Reference'))}: ${esc(r.ref.name)}</div>` + refRows(r.ref.fields);
   if (r.src) $('#refSrcReport').innerHTML = `<div class="ref-h">${esc(rt('فایل منبع', 'Source'))}: ${esc(r.src.name)}</div>` + refRows(r.src.fields);
 }
+// v39: قطع موقت رله/ربات، وضعیت «نامشخص» نشون می‌ده (نه آخرین وضعیت که ممکنه قدیمی باشه).
+// سقف تلاش: بعد از REF_MAX_FAILS خطای پشت‌هم، polling می‌ایسته و دکمه‌ی «بررسی دوباره» ظاهر می‌شه.
+const REF_MAX_FAILS = 10;
+let refFails = 0;
+function refUnknown(n) {
+  const el = $('#refProg'); if (!el) return;
+  const capped = n >= REF_MAX_FAILS;
+  el.textContent = capped ? rt('وضعیت نامشخص: ربات یا رله در دسترس نیست.', 'Status unknown: the bot or relay is unreachable.') : rt('وضعیت نامشخص؛ در حال بازیابی…', 'Status unknown; recovering…');
+  let b = document.getElementById('refRetryBtn');
+  if (capped && !b) {
+    b = document.createElement('button'); b.id = 'refRetryBtn'; b.type = 'button';
+    b.textContent = rt('بررسی دوباره', 'Check again');
+    b.onclick = () => window.refRetry();
+    el.insertAdjacentElement('afterend', b);
+  }
+  if (b) b.style.display = capped ? '' : 'none';
+}
 async function refTick() {
   const r = await call('ref_status', {}, 15000).catch(() => null);
-  if (!r) return;
+  if (!r) {
+    refFails++;
+    refUnknown(refFails);
+    if (refFails >= REF_MAX_FAILS) { clearInterval(refPoll); refPoll = null; }
+    return;
+  }
+  refFails = 0;
   refLast = r; refRender(r);
-  const busy = r.state === 'fetching' || r.state === 'analyzing';
+  const busy = REF_BUSY.includes(r.state);
   if (!busy) { clearInterval(refPoll); refPoll = null; }
 }
+window.refRetry = () => { refFails = 0; refStartPoll(); };
 function refCmpRender(rows) {
   refCmpLast = rows;
   $('#refCompare').innerHTML = `<div class="ref-h">${esc(rt('مقایسه‌ی قطعی', 'Exact comparison'))}</div>` + rows.map(x => {
