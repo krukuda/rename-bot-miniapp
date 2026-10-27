@@ -507,6 +507,7 @@ async function send(obj) {
     let r = null;
     try { r = await fetch(`${RELAY}/${UP}`, { method: 'POST', body }); } catch (e) { r = null; }
     if (r && r.ok) { postFail = false; return; }
+    if (r && r.status === 413) throw new Error('این پیام از سقف اندازه‌ی رله بزرگ‌تره؛ این کار از مینی‌اپ ممکن نیست.');
     if (r && r.status !== 429 && r.status < 500) { postFail = true; throw new Error('رله ' + r.status); }
     msg = r ? 'رله ' + r.status : 'رله در دسترس نیست';
     if (a < 2) await new Promise(res => setTimeout(res, (a + 1) * 1500 + Math.random() * 500));
@@ -514,41 +515,59 @@ async function send(obj) {
   postFail = true;
   throw new Error(msg);
 }
-function call(c, d, timeout = 25000) {
+const LATE_KEEP_MS = 120000;  // v40: پاسخ دیررس تا این مدت پذیرفته می‌شه (قبلاً بعد از مهلت دور ریخته می‌شد)
+function call(c, d, timeout = 25000, onLate = null) {
   return new Promise((res, rej) => {
-    const r = Math.random().toString(36).slice(2, 8);
-    const t = setTimeout(() => { pending.delete(r); rej(new Error('ربات جواب نداد')); }, timeout);
-    pending.set(r, { res, rej, t });
+    const r = Math.random().toString(36).slice(2, 10);
+    const t = setTimeout(() => {
+      const p = pending.get(r); if (!p) return;
+      p.timedOut = true;
+      rej(new Error('پاسخ ربات نرسید؛ وضعیت نامشخصه و اگه انجام شده باشه، بعداً نشون داده می‌شه.'));
+      p.t = setTimeout(() => pending.delete(r), LATE_KEEP_MS);
+    }, timeout);
+    pending.set(r, { res, rej, t, onLate });
     send({ c, d: d || {}, r }).catch(e => { clearTimeout(t); pending.delete(r); rej(e); });
   });
-}
-async function act(c, d, okMsg) {
-  try { const r = await call(c, d); if (okMsg) toast(okMsg); haptic(); return r || {}; }
+}async function act(c, d, okMsg) {
+  try { const r = await call(c, d, 25000, () => { if (okMsg) toast(okMsg); }); if (okMsg) toast(okMsg); haptic(); return r || {}; }
   catch (e) { toast(e.message || 'خطا', true); return null; }
 }
 function onMsg(o) {
   lastRx = Date.now();
-  if (o.t === 'state') { S = o.d; authErr = ''; setConn('live'); helloTries = 0; renderAll(); }
+  if (o.t === 'state') { S = o.d; authErr = ''; setConn('live'); helloTries = 0; renderAll(); refFromState(S.refj); }
   else if (o.t === 'err') {
     if (o.code === 'rate') { toast('کمی آهسته‌تر؛ درخواست‌ها زیاد بود', true); return; }
     authErr = ERR_TEXT[o.code] || ERR_TEXT.bad; if (conn !== 'live' || o.code === 'off') setConn('offline');
   }
-  else if (o.t === 'ack') { const p = pending.get(o.r); if (p) { clearTimeout(p.t); pending.delete(o.r); o.ok ? p.res(o.d || {}) : p.rej(new Error(o.e || 'خطا')); } }
+  else if (o.t === 'ack') { const p = pending.get(o.r); if (p) { clearTimeout(p.t); pending.delete(o.r);
+    if (p.timedOut) { if (o.ok && p.onLate) p.onLate(o.d || {}); else if (!o.ok) toast(o.e || 'خطا', true); }
+    else o.ok ? p.res(o.d || {}) : p.rej(new Error(o.e || 'خطا')); } }
   else if (o.t === 'chat') { bubble('bot', o.text, o.err, o.via); chatBusy(false); }
   else if (o.t === 'avatar') { window.__tl && window.__tl.avatar(o.d); }
   else if (o.t === 'pong') { if (conn !== 'live') setConn('live'); }
 }
+let lastMid = '', reTimer = null, reN = 0;
 function openStream() {
   if (es) es.close();
+  clearTimeout(reTimer);
   relayState = 'init';
-  es = new EventSource(`${RELAY}/${DN}/sse`);
-  es.addEventListener('open', () => { relayState = 'open'; hello(); });
-  es.onerror = () => { if (relayState !== 'open') relayState = 'error'; };  // EventSource خودش دوباره تلاش می‌کنه
-  es.onmessage = async ev => {
-    try { const m = JSON.parse(ev.data); if (m.event && m.event !== 'message') return; onMsg(await openFrame(m.message, DN)); } catch (e) {}
+  // v40: ntfy برای اتصال مجدد ساده پیام‌های گم‌شده رو نمی‌ده؛ از آخرین id پردازش‌شده ادامه می‌دیم
+  es = new EventSource(`${RELAY}/${DN}/sse` + (lastMid ? `?since=${encodeURIComponent(lastMid)}` : ''));
+  es.addEventListener('open', () => { relayState = 'open'; reN = 0; hello(); });
+  es.onerror = () => {
+    if (relayState !== 'open') relayState = 'error';
+    es.close(); clearTimeout(reTimer);
+    reTimer = setTimeout(openStream, Math.min(15000, 1000 * Math.pow(2, reN++)));
   };
-}
-function hello() { send({ c: 'hello', r: 'h' + Date.now() }).catch(() => {}); }
+  es.onmessage = async ev => {
+    try {
+      const m = JSON.parse(ev.data);
+      if (m.event && m.event !== 'message') return;
+      if (m.id) lastMid = m.id;
+      onMsg(await openFrame(m.message, DN));
+    } catch (e) {}
+  };
+}function hello() { send({ c: 'hello', r: 'h' + Date.now() }).catch(() => {}); }
 function retry() { authErr = ''; postFail = false; setConn('connecting'); helloTries = 0; openStream(); }
 window.retry = retry;
 async function boot() {
@@ -1064,28 +1083,34 @@ function refUnknown(n) {
   const capped = n >= REF_MAX_FAILS;
   el.textContent = capped ? rt('وضعیت نامشخص: ربات یا رله در دسترس نیست.', 'Status unknown: the bot or relay is unreachable.') : rt('وضعیت نامشخص؛ در حال بازیابی…', 'Status unknown; recovering…');
   let b = document.getElementById('refRetryBtn');
-  if (capped && !b) {
+  if (!b) {
     b = document.createElement('button'); b.id = 'refRetryBtn'; b.type = 'button';
     b.textContent = rt('بررسی دوباره', 'Check again');
     b.onclick = () => window.refRetry();
     el.insertAdjacentElement('afterend', b);
   }
-  if (b) b.style.display = capped ? '' : 'none';
-}
-async function refTick() {
+  b.style.display = '';  // v40: از اولین وضعیت نامشخص هست؛ تلاش خودکار هم تا سقف با فاصله‌ی بیشتر ادامه داره
+}let refRetryT = null;
+async function refTick() {  // v40: یک درخواست؛ شکست = وضعیت نامشخص + تلاش مجدد با فاصله‌ی بیشتر (نه حلقه‌ی سریع)
+  clearTimeout(refRetryT);
   const r = await call('ref_status', {}, 15000).catch(() => null);
   if (!r) {
     refFails++;
     refUnknown(refFails);
-    if (refFails >= REF_MAX_FAILS) { clearInterval(refPoll); refPoll = null; }
+    if (refFails < REF_MAX_FAILS) refRetryT = setTimeout(refTick, Math.min(60000, 3000 * Math.pow(2, refFails - 1)));
     return;
   }
   refFails = 0;
   refLast = r; refRender(r);
-  const busy = REF_BUSY.includes(r.state);
-  if (!busy) { clearInterval(refPoll); refPoll = null; }
 }
-window.refRetry = () => { refFails = 0; refStartPoll(); };
+// v40: وضعیت کوتاه job از فریم state (refj). وقتی job تموم شد، یک بار گزارش کامل گرفته می‌شه.
+function refFromState(j) {
+  if (!j) return;
+  const prev = refLast ? refLast.state : null;
+  refLast = Object.assign({}, refLast || {}, { state: j.s, pct: j.p, bytes: j.b, err: j.e, stalled_s: 0 });
+  refRender(refLast);
+  if (REF_BUSY.includes(prev) && !REF_BUSY.includes(j.s)) refTick();
+}window.refRetry = () => { refFails = 0; refStartPoll(); };
 function refCmpRender(rows) {
   refCmpLast = rows;
   $('#refCompare').innerHTML = `<div class="ref-h">${esc(rt('مقایسه‌ی قطعی', 'Exact comparison'))}</div>` + rows.map(x => {
@@ -1098,7 +1123,7 @@ document.addEventListener('click', e => {
   const t = e.target;
   if (t && t.closest && (t.closest('#tlLangBtn') || t.closest('[data-set="lang"]'))) setTimeout(() => { refRender(refLast); if (refCmpLast) refCmpRender(refCmpLast); }, 0);
 });
-function refStartPoll() { if (refPoll) clearInterval(refPoll); refPoll = setInterval(refTick, 1200); refTick(); }
+function refStartPoll() { refTick(); }  // v40: بدون حلقه‌ی پولینگ؛ پیشرفت از فریم state می‌آد
 function refB64(bytes) { let s = ''; const CH = 0x8000; for (let i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH)); return btoa(s); }
 async function refUpload(file, slot) {
   if (!file) return;
@@ -1121,7 +1146,7 @@ $('#refUrlGo').onclick = async () => { const url = $('#refUrl').value.trim(); if
 $('#refSrcUrlGo').onclick = async () => { const url = $('#refUrl').value.trim(); if (!url) return toast(rt('لینک منبع رو توی کادر بالا بذار', 'Put the source link in the box above'), true); const r = await act('ref_url', { url, slot: 'src' }, null); if (r) refStartPoll(); };
 $('#refFile').onchange = e => { refUpload(e.target.files[0], 'ref'); e.target.value = ''; };
 $('#refSrcFile').onchange = e => { refUpload(e.target.files[0], 'src'); e.target.value = ''; };
-$('#refCancel').onclick = async () => { await act('ref_cancel', {}, rt('لغو شد', 'Cancelled')); refStartPoll(); };
+$('#refCancel').onclick = async () => { $('#refProg').textContent = rt('در حال لغو…', 'Cancelling…'); await act('ref_cancel', {}, rt('لغو شد', 'Cancelled')); refStartPoll(); };
 $('#refCmp').onclick = async () => {
   const r = await act('ref_compare', {}, null); if (!r) return;
   refCmpRender(r.rows);
