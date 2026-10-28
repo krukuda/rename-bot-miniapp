@@ -8,6 +8,7 @@
 <title>Téleios</title>
 <link rel="icon" href="logo.png?v=106dc53b">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <style>
 :root{
   --bg:var(--tg-theme-bg-color,#f5f6fa);
@@ -464,10 +465,11 @@ async function openFrame(b64, topic) {
 
 /* ---------------- ارتباط با ربات (رله) ---------------- */
 const Q = new URLSearchParams(location.search);
-const TID = Q.get('t'), KEYB = Q.get('k'), RELAY = (Q.get('r') || 'https://ntfy.sh').replace(/\/+$/, '');
+const TID = Q.get('t'), KEYB = Q.get('k');
+const ABLY_TOKEN = Q.get('a') || '', ABLY_EXP = Number(Q.get('x') || 0);
 const UP = `rnb${TID}u`, DN = `rnb${TID}d`;
 let LEGACY = null; try { LEGACY = JSON.parse(dec.decode(b64uToBytes(Q.get('s')))); } catch (e) {}
-let S = null, conn = 'connecting', lastRx = 0, nonce = 0, es = null, helloTries = 0;
+let S = null, conn = 'connecting', lastRx = 0, nonce = 0, helloTries = 0;
 let relayState = 'init', postFail = false, authErr = '';
 // وقتی مینی‌اپ از «دکمه‌ی کیبورد» باز بشه، تلگرام طبق مستندات initData رو خالی می‌ده (فقط menu button / دکمه‌ی اینلاین / لینک مستقیم می‌دن)
 const INIT_EMPTY = !!(tg && tg.platform && tg.platform !== 'unknown' && !tg.initData);
@@ -476,13 +478,14 @@ const MSG_NOINIT = 'پنل از «دکمه‌ی کیبورد» باز شده و 
 const ERR_TEXT = {
   noinit: MSG_NOINIT,
   expired: 'نشست پنل بیش از ۲۴ ساعت پیش باز شده و منقضی شده؛ پنل رو ببند و دوباره باز کن.',
+  auth: 'نشست امنیتی پنل منقضی شده یا نامعتبره؛ پنل رو از ربات دوباره باز کن (/app).',
   bad: 'تلگرام هویت معتبری برای پنل نداد؛ پنل رو از دکمه‌ی زیر پیام /app یا منوی «🎛 پنل» باز کن. اگه حل نشد، توی ربات «/app reset» بزن.',
 };
 function offlineHtml() {
   let why, canRetry = true;
   if (INIT_EMPTY) { why = MSG_NOINIT; canRetry = false; }
   else if (authErr) why = authErr;
-  else if (relayState === 'error' || postFail) why = 'رله‌ی ' + RELAY.replace(/^https?:\/\//, '') + ' از این شبکه در دسترس نیست (اینترنت قطع، فیلتر یا نیاز به VPN؟). ربات ممکنه روشن باشه ولی پیام‌ها بهش نمی‌رسه.';
+  else if (relayState === 'error' || postFail) why = 'سرویس ارتباط زنده (Ably) از این شبکه در دسترس نیست (اینترنت قطع، فیلتر یا نیاز به VPN؟). ربات ممکنه روشن باشه ولی پیام‌ها بهش نمی‌رسه.';
   else why = 'ربات جواب نمی‌ده (خاموشه یا هنوز بالا نیومده). رله در دسترسه.';
   return esc(why) + ' ' + (canRetry ? '<button class="sm" onclick="retry()">تلاش مجدد</button>' : '');
 }
@@ -497,19 +500,21 @@ function setConn(c) {
   else b.className = 'banner';
 }
 async function send(obj) {
-  // v38: 429 و 5xx با backoff کوتاه دوباره فرستاده می‌شن. همون پیام (همون n) دوباره رمزنگاری می‌شه؛
-  // ربات n تکراری رو نادیده می‌گیره، پس اگه تلاش قبلی ذخیره شده بوده، دستور دوبار اجرا نمی‌شه.
+  // v41 (Ably): همون منطق تلاش مجدد؛ ارسال از publish روی کانال بالا. همون n دوباره رمزنگاری نمی‌شه،
+  // پس ربات تکراری رو نادیده می‌گیره و دستور دوبار اجرا نمی‌شه.
+  if (!ablyUp) throw new Error('رله آماده نیست');
   nonce = Math.max(nonce + 1, Date.now() * 1000);
   obj.n = nonce; obj.i = tg ? tg.initData : '';
   const body = await sealFrame(obj, UP);
   let msg = 'رله در دسترس نیست';
   for (let a = 0; a < 3; a++) {
-    let r = null;
-    try { r = await fetch(`${RELAY}/${UP}`, { method: 'POST', body }); } catch (e) { r = null; }
-    if (r && r.ok) { postFail = false; return; }
-    if (r && r.status === 413) throw new Error('این پیام از سقف اندازه‌ی رله بزرگ‌تره؛ این کار از مینی‌اپ ممکن نیست.');
-    if (r && r.status !== 429 && r.status < 500) { postFail = true; throw new Error('رله ' + r.status); }
-    msg = r ? 'رله ' + r.status : 'رله در دسترس نیست';
+    try { await ablyUp.publish('f', body); postFail = false; return; }
+    catch (e) {
+      const st = Number((e && (e.statusCode || e.status)) || 0), code = Number((e && e.code) || 0);
+      const transient = st === 0 || st === 429 || st >= 500 || code === 42910 || code === 40142 || code === 40171 || code === 80000 || code === 80002 || code === 80003;
+      if (!transient) { postFail = true; throw new Error('رله ' + (st || code)); }
+      msg = (st === 429 || code === 42910) ? 'رله محدودیت نرخ داد' : 'رله در دسترس نیست';
+    }
     if (a < 2) await new Promise(res => setTimeout(res, (a + 1) * 1500 + Math.random() * 500));
   }
   postFail = true;
@@ -542,29 +547,37 @@ function onMsg(o) {
   else if (o.t === 'chat') { bubble('bot', o.text, o.err, o.via); chatBusy(false); }
   else if (o.t === 'avatar') { window.__tl && window.__tl.avatar(o.d); }
   else if (o.t === 'pong') { if (conn !== 'live') setConn('live'); }
+  else if (o.t === 'tok') { ablyTokenArrived(o.d || {}); }
 }
-let lastMid = '', reTimer = null, reN = 0;
+/* ---------------- ارتباط زنده (Ably Pub/Sub، v41) ----------------
+   توکن کوتاه‌عمر و محدود (فقط subscribe روی کانال پایین، publish روی کانال بالا) از لینک، یا از فریم «tok» ربات می‌آد.
+   کلید API هیچ‌وقت به مرورگر نمی‌رسه. SDK موقع نزدیک شدن به انقضا authCallback رو صدا می‌زنه؛ ما توکن تازه‌ای که ربات فرستاده رو می‌دیم. */
+let ABLY = null, ablyCh = null, ablyUp = null, TOK = ABLY_TOKEN, TOK_EXP = ABLY_EXP, tokWaiters = [];
+function ablyTokenArrived(d) {
+  if (!d || !d.token) return;
+  TOK = String(d.token); TOK_EXP = Number(d.x) || 0;
+  const w = tokWaiters; tokWaiters = []; w.forEach(f => f());
+}
+function ablyAuth(params, cb) {
+  if (TOK && TOK_EXP - Date.now() > 30000) return cb(null, TOK);
+  if (!TOK) return cb(new Error('no token'));
+  let done = false;
+  const f = () => { if (done) return; done = true; clearTimeout(t); if (TOK_EXP - Date.now() > 30000) cb(null, TOK); else cb(new Error('token expired')); };
+  const t = setTimeout(() => { if (done) return; done = true; tokWaiters = tokWaiters.filter(x => x !== f); cb(new Error('token renewal timed out')); }, 20000);
+  tokWaiters.push(f);
+}
 function openStream() {
-  if (es) es.close();
-  clearTimeout(reTimer);
-  relayState = 'init';
-  // v40: ntfy برای اتصال مجدد ساده پیام‌های گم‌شده رو نمی‌ده؛ از آخرین id پردازش‌شده ادامه می‌دیم
-  es = new EventSource(`${RELAY}/${DN}/sse` + (lastMid ? `?since=${encodeURIComponent(lastMid)}` : ''));
-  es.addEventListener('open', () => { relayState = 'open'; reN = 0; hello(); });
-  es.onerror = () => {
-    if (relayState !== 'open') relayState = 'error';
-    es.close(); clearTimeout(reTimer);
-    reTimer = setTimeout(openStream, Math.min(15000, 1000 * Math.pow(2, reN++)));
-  };
-  es.onmessage = async ev => {
-    try {
-      const m = JSON.parse(ev.data);
-      if (m.event && m.event !== 'message') return;
-      if (m.id) lastMid = m.id;
-      onMsg(await openFrame(m.message, DN));
-    } catch (e) {}
-  };
-}function hello() { send({ c: 'hello', r: 'h' + Date.now() }).catch(() => {}); }
+  if (ABLY) { try { if (ABLY.connection.state !== 'connected') ABLY.connect(); } catch (e) {} return; }
+  if (!window.Ably) { relayState = 'error'; setConn('offline'); return; }  // کتابخانه‌ی Ably لود نشد (CDN یا شبکه)
+  ABLY = new Ably.Realtime({ authCallback: ablyAuth, logLevel: 1 });
+  ablyCh = ABLY.channels.get(DN); ablyUp = ABLY.channels.get(UP);
+  ablyCh.subscribe(async m => { try { onMsg(await openFrame(m.data, DN)); } catch (e) {} });
+  ABLY.connection.on('connected', () => { relayState = 'open'; postFail = false; authErr = ''; hello(); });
+  ABLY.connection.on('disconnected', () => { relayState = 'error'; });
+  ABLY.connection.on('suspended', () => { relayState = 'error'; });
+  ABLY.connection.on('failed', () => { relayState = 'error'; authErr = ERR_TEXT.auth; setConn('offline'); });
+}
+function hello() { send({ c: 'hello', r: 'h' + Date.now() }).catch(() => {}); }
 function retry() { authErr = ''; postFail = false; setConn('connecting'); helloTries = 0; openStream(); }
 window.retry = retry;
 async function boot() {
