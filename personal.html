@@ -596,7 +596,7 @@ async function boot() {
     if (!S && helloTries < 6) { helloTries++; hello(); }
     if (!S && helloTries >= 4 && conn !== 'offline' && Date.now() - lastRx > 15000) setConn('offline');
     if (S) { send({ c: 'ping' }).catch(() => {}); if (Date.now() - lastRx > 75000 && conn === 'live') setConn('offline'); }
-  }, 20000);
+  }, 45000);
   setTimeout(() => { if (!S) { hello(); } }, 3000);
   setTimeout(() => { if (!S && conn !== 'live') setConn('offline'); }, 14000);
 }
