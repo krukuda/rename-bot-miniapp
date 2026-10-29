@@ -857,7 +857,34 @@ function renderNav() {
 /* ---------------- تورنت ---------------- */
 const torSel = {};   // k -> Set(id فایل‌های انتخاب‌شده)
 const TSTAGE = { add: 'در حال گرفتن اطلاعات…', select: 'فایل‌ها رو انتخاب کن', dl: 'در حال دانلود', fetch: 'در حال ارسال به تلگرام', done: '✅ تموم شد', err: '❌ ناموفق' };
-const torTotal = t => (t.files || []).filter(f => (torSel[t.k] || new Set()).has(f.id)).reduce((a, f) => a + f.b, 0);
+const TOR_CAPS = [25, 50, 75, 100, 150, 200];
+const torExtra = {};   // k -> فایل‌های صفحه‌های بعدی (بعد از فایل‌های داخل state، به همون ترتیب سرور)
+const torFailAt = {};  // k -> زمان آخرین شکست بارگذاری (برای جلوگیری از تلاش پشت‌سرهم)
+const torLoading = {};
+const torFiles = t => {  // فایل‌های بارگذاری‌شده‌ی یک تورنت، بدون تکرار
+  const seen = new Set(), out = [];
+  for (const f of [...(t.files || []), ...(torExtra[t.k] || [])]) if (!seen.has(f.id)) { seen.add(f.id); out.push(f); }
+  return out;
+};
+const torCap = () => (S && S.tor && S.tor.files_cap) || 75;
+const torTotal = t => torFiles(t).filter(f => (torSel[t.k] || new Set()).has(f.id)).reduce((a, f) => a + f.b, 0);
+async function torLoad(k) {
+  if (torLoading[k]) return;
+  torLoading[k] = true;
+  try {
+    for (;;) {
+      const cur = ((S && S.tors) || []).find(x => x.k === k);
+      if (!cur || cur.stage !== 'select') break;
+      const have = torFiles(cur), want = Math.min(torCap(), cur.nf || 0);
+      if (have.length >= want) break;
+      const r = await act('tor_files', { k, off: have.length, n: 40 });
+      if (!r || !r.files || !r.files.length) { torFailAt[k] = Date.now(); break; }
+      torExtra[k] = (torExtra[k] || []).concat(r.files);
+      if (torSel[k]) for (const f of r.files) torSel[k].add(f.id);  // فایل‌های تازه‌بارگذاری‌شده مثل بقیه پیش‌فرض انتخاب می‌شن
+      renderTor();
+    }
+  } finally { torLoading[k] = false; renderTor(); }
+}
 function renderTor() {
   const T = S && S.tor, on = !!(T && T.on);
   const nb = $('#tor_b'), live = on ? (S.tors || []).filter(t => t.stage !== 'done' && t.stage !== 'err').length : 0;
@@ -868,23 +895,34 @@ function renderTor() {
     note.textContent = !S ? 'منتظر ربات…' : (T && T.why === 'public' ? 'ادمین تورنت رو برای کاربران عمومی فعال نکرده.' : 'تورنت روی ربات خاموشه: توی سلول ۵ گزینه‌ی تورنت رو Y بزن و ربات رو دوباره اجرا کن.');
     $('#tors').innerHTML = ''; $('#torhint').textContent = ''; return;
   }
+  for (const k of Object.keys(torExtra)) if (!(S.tors || []).some(x => x.k === k)) { delete torExtra[k]; delete torFailAt[k]; }
   $('#torhint').textContent = [T.cap ? `سقف حجم کل: ${T.cap} مگابایت` : '', T.cap_n ? `${T.left} از ${T.cap_n} تورنت امروز باقی‌مانده` : ''].filter(Boolean).join(' • ');
-  $('#tors').innerHTML = (S.tors || []).map(t => {
-    if (t.stage === 'select' && !torSel[t.k]) torSel[t.k] = new Set((t.files || []).map(f => f.id));
+  const cap = torCap();
+  const capRow = `<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px"><span class="sub">تعداد فایل‌های نمایشی:</span>${TOR_CAPS.map(n => `<button class="sm${n === cap ? ' pri' : ''}" onclick="torCapSet(${n})">${n}</button>`).join('')}<input type="number" id="torCapIn" min="10" max="200" step="5" value="${cap}" style="width:72px"><button class="sm" onclick="torCapSet(document.getElementById('torCapIn').value)">ذخیره</button></div>`;
+  $('#tors').innerHTML = capRow + (S.tors || []).map(t => {
+    if (t.stage === 'select' && !torSel[t.k]) torSel[t.k] = new Set(torFiles(t).map(f => f.id));
     const live = t.stage !== 'done' && t.stage !== 'err';
     let body = `<div class="hint">${esc(TSTAGE[t.stage] || t.stage)}${t.stage === 'dl' ? ` — ${t.pct}%${t.spd ? ' • ' + fmtSize(t.spd) + '/s' : ''} • 🌱 ${t.seeders}` : ''}${t.stage === 'fetch' ? ` (${t.done}/${t.total})` : ''}${t.err ? ' — ' + esc(t.err) : ''}</div>`;
     if (t.stage === 'dl') body += `<div class="bar"><i style="width:${Math.min(100, t.pct)}%"></i></div>`;
     if (t.stage === 'select') {
-      body += (t.files || []).map(f => `<label class="item"><input type="checkbox" data-k="${esc(t.k)}" data-id="${f.id}" ${torSel[t.k].has(f.id) ? 'checked' : ''}><span class="nm">${esc(f.p)}</span><span class="sub">${fmtSize(f.b)}</span></label>`).join('');
-      if (t.nf > (t.files || []).length) body += `<div class="hint">فقط ${(t.files || []).length} فایل بزرگ‌تر از ${t.nf} فایل نمایش داده می‌شه.</div>`;
+      const files = torFiles(t), total = t.nf || files.length, want = Math.min(cap, total), shown = files.slice(0, cap);
+      body += shown.map(f => `<label class="item"><input type="checkbox" data-k="${esc(t.k)}" data-id="${f.id}" ${torSel[t.k].has(f.id) ? 'checked' : ''}><span class="nm">${esc(f.p)}</span><span class="sub">${fmtSize(f.b)}</span></label>`).join('');
+      if (files.length < want) {
+        const loading = !!torLoading[t.k];
+        body += `<div class="hint">${loading ? '⏳ در حال بارگذاری فایل‌های بیشتر' : 'فایل‌های بیشتر بارگذاری نشدن'} (${files.length} از ${want})</div>`;
+        if (!loading) body += `<div class="row" style="margin-top:4px"><button class="sm" onclick="torMore('${esc(t.k)}')">⬇️ بارگذاری بیشتر</button></div>`;
+        if (!loading && !(Date.now() - (torFailAt[t.k] || 0) < 10000)) setTimeout(() => torLoad(t.k), 0);
+      } else if (total > shown.length) {
+        body += `<div class="hint">نمایش ${shown.length} از ${total} فایل — برای دیدن بیشتر سقف نمایش رو بالا ببر.</div>`;
+      }
       if (S.enc && S.enc.on) body += `<label class="row" style="margin-top:8px;gap:8px;cursor:pointer"><input type="checkbox" ${(t.k in torEnc ? torEnc[t.k] : t.enc) ? 'checked' : ''} onchange="torEncSet('${esc(t.k)}', this.checked)"><span>🎞 انکود بعد از دانلود</span></label>`;
-    body += `<div class="row" style="margin-top:8px"><button class="pri grow" onclick="torGo('${esc(t.k)}')">▶️ شروع (${fmtSize(torTotal(t))})</button><button onclick="torAll('${esc(t.k)}')">🔘 همه/هیچ</button></div>`;
+      body += `<div class="row" style="margin-top:8px"><button class="pri grow" onclick="torGo('${esc(t.k)}')">▶️ شروع (${fmtSize(torTotal(t))})</button><button onclick="torAll('${esc(t.k)}')">🔘 همه/هیچ</button></div>`;
     }
     if (live) body += `<div class="row" style="margin-top:8px"><button class="sm bad" onclick="torCancel('${esc(t.k)}')">❌ لغو</button></div>`;
     else body += `<div class="row" style="margin-top:8px"><button class="sm" onclick="torDismiss('${esc(t.k)}')">🗑 حذف از فهرست</button></div>`;
     return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><div class="nm mono" style="font-weight:600">🧲 ${esc(t.name || 'تورنت')} ${t.size ? '<span class="sub">• ' + fmtSize(t.size) + '</span>' : ''}</div>${body}</div>`;
   }).join('');
-  $$('#tors input[type=checkbox]').forEach(cb => cb.onchange = () => {
+  $$('#tors input[type=checkbox][data-k]').forEach(cb => cb.onchange = () => {
     const s = torSel[cb.dataset.k] || (torSel[cb.dataset.k] = new Set());
     cb.checked ? s.add(+cb.dataset.id) : s.delete(+cb.dataset.id); renderTor();
   });
@@ -894,7 +932,15 @@ window.torEncSet = (k, v) => { torEnc[k] = v; };
 window.torGo = async k => { const ids = [...(torSel[k] || [])]; if (!ids.length) return toast('حداقل یک فایل انتخاب کن', true); const t = ((S && S.tors) || []).find(x => x.k === k) || {}; await act('tor_go', { k, ids, enc: k in torEnc ? !!torEnc[k] : !!t.enc }, 'شروع شد'); };
 window.torCancel = async k => { if (confirm('این تورنت لغو بشه؟')) await act('tor_cancel', { k }, 'لغو شد'); };
 window.torDismiss = async k => { await act('tor_dismiss', { k }, 'از فهرست حذف شد'); };
-window.torAll = k => { const t = ((S && S.tors) || []).find(x => x.k === k); if (!t) return; const s = torSel[k]; torSel[k] = (s && s.size === t.files.length) ? new Set() : new Set(t.files.map(f => f.id)); renderTor(); };
+window.torMore = k => { torFailAt[k] = 0; torLoad(k); };
+window.torCapSet = async v => {
+  const n = Math.round(+v);
+  if (!(n >= 10 && n <= 200)) return toast('سقف باید بین ۱۰ تا ۲۰۰ باشه', true);
+  if (S && S.tor) S.tor.files_cap = n;  // بلافاصله نشون بده؛ تأیید نهایی از state سرور می‌آد
+  renderTor();
+  await act('tor_cap', { n }, 'سقف نمایش ذخیره شد');
+};
+window.torAll = k => { const t = ((S && S.tors) || []).find(x => x.k === k); if (!t) return; const all = torFiles(t), s = torSel[k]; torSel[k] = (s && s.size === all.length) ? new Set() : new Set(all.map(f => f.id)); renderTor(); };
 $('#goMagnet').onclick = async () => {
   const magnet = $('#magnet').value.trim();
   if (!/^magnet:\?/i.test(magnet)) return toast('لینک مگنت معتبر نیست (باید با magnet:? شروع بشه)', true);
