@@ -868,7 +868,7 @@ function renderChat() {
   $('#provs').innerHTML = c ? c.prov.map(x => esc(x)).join('<br>') : '';
   const adm = $('#provadm');
   if (S && S.accts && c && c.enabled) {
-    adm.innerHTML = `<div class="row wrap" style="margin-top:8px">${['auto', 'gemini', 'colab', 'local'].map(p => `<button class="sm ${(c.pin || 'auto') === p ? 'pri' : ''}" onclick="setProv('${p}')">${p}</button>`).join('')}<button class="sm" onclick="nextModel()">⏭ مدل محلی بعدی</button></div>`;
+    adm.innerHTML = `<div class="row wrap" style="margin-top:8px">${['auto', 'gemini', 'colab', 'local', ...((c.cf_ok || c.pin === 'cloudflare') ? ['cloudflare'] : [])].map(p => `<button class="sm ${(c.pin || 'auto') === p ? 'pri' : ''}" onclick="setProv('${p}')">${p}</button>`).join('')}<button class="sm" onclick="nextModel()">⏭ مدل محلی بعدی</button></div>`;
   } else adm.innerHTML = '';
 }
 window.setProv = p => act('provider', { p }, 'اولویت منبع عوض شد');
