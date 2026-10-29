@@ -881,6 +881,7 @@ function renderTor() {
     body += `<div class="row" style="margin-top:8px"><button class="pri grow" onclick="torGo('${esc(t.k)}')">▶️ شروع (${fmtSize(torTotal(t))})</button><button onclick="torAll('${esc(t.k)}')">🔘 همه/هیچ</button></div>`;
     }
     if (live) body += `<div class="row" style="margin-top:8px"><button class="sm bad" onclick="torCancel('${esc(t.k)}')">❌ لغو</button></div>`;
+    else body += `<div class="row" style="margin-top:8px"><button class="sm" onclick="torDismiss('${esc(t.k)}')">🗑 حذف از فهرست</button></div>`;
     return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><div class="nm mono" style="font-weight:600">🧲 ${esc(t.name || 'تورنت')} ${t.size ? '<span class="sub">• ' + fmtSize(t.size) + '</span>' : ''}</div>${body}</div>`;
   }).join('');
   $$('#tors input[type=checkbox]').forEach(cb => cb.onchange = () => {
@@ -892,6 +893,7 @@ const torEnc = {};
 window.torEncSet = (k, v) => { torEnc[k] = v; };
 window.torGo = async k => { const ids = [...(torSel[k] || [])]; if (!ids.length) return toast('حداقل یک فایل انتخاب کن', true); const t = ((S && S.tors) || []).find(x => x.k === k) || {}; await act('tor_go', { k, ids, enc: k in torEnc ? !!torEnc[k] : !!t.enc }, 'شروع شد'); };
 window.torCancel = async k => { if (confirm('این تورنت لغو بشه؟')) await act('tor_cancel', { k }, 'لغو شد'); };
+window.torDismiss = async k => { await act('tor_dismiss', { k }, 'از فهرست حذف شد'); };
 window.torAll = k => { const t = ((S && S.tors) || []).find(x => x.k === k); if (!t) return; const s = torSel[k]; torSel[k] = (s && s.size === t.files.length) ? new Set() : new Set(t.files.map(f => f.id)); renderTor(); };
 $('#goMagnet').onclick = async () => {
   const magnet = $('#magnet').value.trim();
