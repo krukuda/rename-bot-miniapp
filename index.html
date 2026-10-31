@@ -184,6 +184,15 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
 .ref-h{font-weight:700;margin:6px 0 2px}
 .ev-verified .ref-e{color:#16a34a}.ev-measured .ref-e{color:#2563eb}.ev-estimated .ref-e,.ev-inferred .ref-e{color:#b45309}.ev-unknown .ref-e{color:#6b7280}
 .ev-changed .ref-e{color:#b45309}.ev-same .ref-e{color:#16a34a}
+.fbtn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;background:color-mix(in srgb,var(--hint) 12%,transparent);color:var(--tx);border-radius:12px;padding:10px 12px;min-height:42px;margin-bottom:6px;text-align:start;font:inherit}
+.fbtn small{color:var(--hint);font-size:12px}
+.fsheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.fsheet[hidden]{display:none}
+.fsback{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+.fspan{position:relative;width:100%;max-width:560px;max-height:86vh;overflow-y:auto;background:var(--bg);border-radius:18px 18px 0 0;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 20px rgba(0,0,0,.18)}
+.fi{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:start;background:var(--card);color:var(--tx);border-radius:12px;margin-bottom:8px;padding:10px 12px;min-height:44px;border:2px solid transparent}
+.fi.on{border-color:var(--ac)}
+.fi small{color:var(--hint);font-size:12px}
 </style>
 </head>
 <body>
@@ -376,10 +385,11 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
           <div id="e_subs"></div>
           <div class="row wrap" style="margin-top:8px"><button class="grow" id="e_subwait">📎 منتظر فایل زیرنویس باش</button><button class="sm bad" id="e_subclr">🗑 پاک‌کردن</button></div>
           <div class="hint">بعد از زدن دکمه، فایل زیرنویس رو توی چت ربات بفرست. برای چند ویدیو، زیرنویس‌ها هم‌نام ویدیو باشن یا به همون ترتیب فرستاده بشن. فارسیِ Windows-1256 خودکار به UTF-8 تبدیل می‌شه.</div>
+          <div class="sw" id="e_embrow" style="display:none"><span>استفاده از فونت‌های ضمیمه‌شده (Embedded Fonts)<br><small class="hint">فقط برای زیرنویس ASS/SSA؛ خاموش = فونت‌های داخل زیرنویس استخراج نمی‌شن</small></span><button class="tg" id="e_emb" type="button"></button></div>
         </div>
         <div id="e_style" style="display:none">
           <label class="fld">استایل زیرنویس <span class="hint">(برای زیرنویس ASS/SSA خودِ فایل حفظ می‌شه)</span></label>
-          <div class="seg" id="e_font"></div>
+          <button class="fbtn" id="e_fontbtn" type="button"></button>
           <label class="fld">اندازه: <b id="e_sizev"></b></label>
           <input type="range" class="rng" id="e_size" min="12" max="64" step="1">
           <label class="fld">رنگ</label><div class="swr" id="e_colors"></div>
@@ -970,9 +980,8 @@ $('#goMagnet').onclick = async () => {
 $('#pasteMagnet').onclick = async () => { try { $('#magnet').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
 /* ---------------- انکود / هاردساب ---------------- */
-const ENC_DEF = { codec: 'h264', crf: 23, preset: 'veryfast', res: 'orig', abit: 128, cont: 'mp4', sub: 'none', sublang: 'fa', alang: 'first', font: 'Vazirmatn', size: 24, color: '#FFFFFF', outline: 2, pos: 'bottom', bold: false, rc: 'crf', vbit: 2500, fps: 'orig', pix: 8, tune: 'none', acodec: 'aac' };
+const ENC_DEF = { codec: 'h264', crf: 23, preset: 'veryfast', res: 'orig', abit: 128, cont: 'mp4', sub: 'none', sublang: 'fa', alang: 'first', emb: true, font: 'Vazirmatn', size: 24, color: '#FFFFFF', outline: 2, pos: 'bottom', bold: false, fw: 400, rc: 'crf', vbit: 2500, fps: 'orig', pix: 8, tune: 'none', acodec: 'aac' };
 const ENC_COLORS = ['#FFFFFF', '#FFEB3B', '#00E5FF', '#B2FF59', '#FF9800'];
-const ENC_FONTS = ['Vazirmatn', 'DejaVu Sans'];
 const ENC_CODEC_FA = { h264: 'H.264', h265: 'H.265', av1: 'AV1' };
 const ENC_CODEC_TXT = { h264: 'سازگارترین؛ تقریباً روی همه‌ی دستگاه‌ها پخش می‌شه.', h265: 'حجم حدود نصف H.264 با کیفیت مشابه؛ بعضی پخش‌کننده‌های قدیمی پخش نمی‌کنن.', av1: 'کم‌حجم‌ترین؛ انکود کندتره و پخش روی بعضی دستگاه‌ها هنوز محدوده.' };
 const ENC_RC_FA = { crf: 'کیفیت ثابت (CRF)', bitrate: 'بیت‌ریت هدف' };
@@ -993,6 +1002,105 @@ function fillEnc(force) {
   if (E && encDirty && !force) return;
   E = { ...ENC_DEF, ...c }; encDirty = false; buildEnc();
 }
+/* ==== FONT LIB START (v4) ==== فهرست فونت‌ها و وزن‌ها از ربات (enc.lists.fonts)؛ هیچ اسم یا آدرسی این‌جا hardcode نشده */
+const FP = { loaded: {}, pending: {}, sel: null, w: 400, q: '', tok: 0, seq: 0, bound: false };
+const FONT_ERR = { nofile: 'این فونت روی سرور فایل قابل‌دانلود نداره؛ پیش‌نمایشش ممکن نیست', nourl: 'این فونت روی سرور فایل قابل‌دانلود نداره؛ پیش‌نمایشش ممکن نیست', http: 'دانلود فونت از GitHub ناموفق بود (شاید این شبکه فیلتره)', big: 'فایل فونت خیلی بزرگه', hash: 'هش فایل با کاتالوگ نمی‌خونه؛ استفاده نمی‌شه', nosubtle: 'مرورگر این قابلیت رو نداره', load: 'خطا در بارگذاری فایل فونت', net: 'دانلود فونت ممکن نشد (اینترنت یا فیلتر؟)' };
+const FW_NAME = { 100: 'Thin', 200: 'ExtraLight', 300: 'Light', 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold', 800: 'ExtraBold', 900: 'Black' };
+const fontList = () => (encL() && encL().fonts) || [];
+const fontById = id => fontList().find(f => f.id === id) || null;
+const fontWt = (f, w) => ((f && f.w) || []).find(x => x.w === w) || null;
+const fontNearest = (f, w) => {  // نزدیک‌ترین وزن موجود (همون منطق ربات)
+  const ws = (f && f.w) || []; if (!ws.length) return null;
+  return ws.reduce((a, b) => (Math.abs(b.w - w) < Math.abs(a.w - w) || (Math.abs(b.w - w) === Math.abs(a.w - w) && b.w < a.w)) ? b : a);
+};
+const encFontCss = (id, w) => FP.loaded[id + '|' + w] || id;
+const fontErrMsg = e => FONT_ERR[e && e.message] || FONT_ERR.net;
+const fontWname = w => `${w} · ${FW_NAME[w] || ''}`.trim();
+function fontBtnRender() {
+  const b = $('#e_fontbtn'); if (!b) return;
+  const f = fontById(E.font), w = E.fw || (E.bold ? 700 : 400);
+  b.innerHTML = `<span>${esc(f ? f.label : E.font)}</span><small>${esc(fontWname(w))} ▾</small>`;
+  b.onclick = openFontSheet;
+}
+async function fontLoad(id, w) {
+  const k = id + '|' + w;
+  if (FP.loaded[k]) return FP.loaded[k];
+  if (FP.pending[k]) return FP.pending[k];
+  const wt = fontWt(fontById(id), w);
+  if (!wt) throw new Error('nofile');
+  if (!wt.url) throw new Error('nourl');
+  if (!(window.crypto && crypto.subtle && window.FontFace)) throw new Error('nosubtle');
+  FP.pending[k] = (async () => {
+    let r;
+    try { r = await fetch(wt.url, { cache: 'force-cache' }); } catch (e) { throw new Error('net'); }
+    if (!r.ok) throw new Error('http');
+    const buf = await r.arrayBuffer();
+    if (buf.byteLength > 12 * 1024 * 1024) throw new Error('big');
+    const hex = [...new Uint8Array(await crypto.subtle.digest('SHA-256', buf))].map(b => b.toString(16).padStart(2, '0')).join('');
+    if (hex !== wt.sha) throw new Error('hash');
+    const name = 'tfp' + (++FP.seq);
+    const ff = new FontFace(name, buf);
+    try { await ff.load(); } catch (e) { throw new Error('load'); }
+    document.fonts.add(ff);
+    FP.loaded[k] = name;
+    return name;
+  })().finally(() => { delete FP.pending[k]; });
+  return FP.pending[k];
+}
+function bindFontSheet() {
+  if (FP.bound) return; FP.bound = true;
+  $('#fsx').onclick = closeFontSheet; $('#fsback').onclick = closeFontSheet;
+  $('#fpok').onclick = confirmFont;
+  $('#fsq').oninput = e => { FP.q = e.target.value; renderFontSheet(); };
+}
+function openFontSheet() {
+  if (!fontList().length) { toast(rt('کاتالوگ فونت هنوز نرسیده؛ چند لحظه دیگه دوباره بزن', 'Font catalog not received yet; try again shortly')); return; }
+  bindFontSheet();
+  FP.sel = E.font; FP.w = E.fw || (E.bold ? 700 : 400); FP.q = ''; $('#fsq').value = '';
+  $('#fsheet').hidden = false;
+  renderFontSheet();
+}
+function closeFontSheet() { $('#fsheet').hidden = true; }
+function renderFontSheet() {
+  const q = FP.q.trim().toLowerCase();
+  const list = fontList().filter(f => !q || f.label.toLowerCase().includes(q) || f.id.toLowerCase().includes(q));
+  $('#fslist').innerHTML = list.length ? list.map(f => `<button type="button" class="fi ${f.id === FP.sel ? 'on' : ''}" data-id="${esc(f.id)}"><span><b>${esc(f.label)}</b><br><small>${esc((f.langs || []).join(' · '))} • ${esc(f.license)}${f.ver ? ' • ' + esc(f.ver) : ''}</small></span><small>${(f.w || []).length} وزن</small></button>`).join('') : `<div class="hint">فونتی با این نام نیست</div>`;
+  $$('#fslist .fi').forEach(b => b.onclick = () => { FP.sel = b.dataset.id; renderFontSheet(); });
+  const f = fontById(FP.sel);
+  $('#fsdet').style.display = f ? '' : 'none';
+  if (!f) return;
+  const near = fontNearest(f, FP.w); if (near) FP.w = near.w;  // وزنی که این فونت نداره انتخاب نمی‌شه
+  const ws = f.w || [];
+  $('#fsw').style.display = ws.length > 1 ? '' : 'none';
+  $('#fsw').innerHTML = ws.map(x => `<button type="button" class="${x.w === FP.w ? 'on' : ''}" data-w="${x.w}">${esc(fontWname(x.w))}</button>`).join('');
+  $$('#fsw button').forEach(b => b.onclick = () => { FP.w = +b.dataset.w; renderFontSheet(); });
+  const lic = f.lic_url ? `<a href="${esc(f.lic_url)}" target="_blank" rel="noopener">متن License</a>` : esc(f.license);
+  $('#fpnote').innerHTML = `License: ${lic}. زیرنویس ASS/SSA: استایل داخل خود فایل حفظ می‌شه و این انتخاب روی آن اعمال نمی‌شه؛ برای SRT/VTT اعمال می‌شه.`;
+  previewFont(f.id, FP.w);
+}
+let fpTok = 0;
+async function previewFont(id, w) {
+  const my = ++fpTok, st = $('#fps'), box = $('#fpv'), k = id + '|' + w;
+  if (FP.loaded[k]) { box.style.fontFamily = `'${FP.loaded[k]}', sans-serif`; st.textContent = '✅ پیش‌نمایش با فایل واقعی همین وزن'; return; }
+  st.textContent = '⏳ در حال دانلود فونت…';
+  try {
+    const name = await fontLoad(id, w);
+    if (my !== fpTok) return;
+    box.style.fontFamily = `'${name}', sans-serif`;
+    st.textContent = '✅ پیش‌نمایش با فایل واقعی همین وزن';
+  } catch (e) {
+    if (my !== fpTok) return;
+    box.style.fontFamily = 'sans-serif';
+    st.textContent = '⚠️ ' + fontErrMsg(e);
+  }
+}
+function confirmFont() {
+  const f = fontById(FP.sel); if (!f) return;
+  const wt = fontWt(f, FP.w) || fontNearest(f, FP.w); if (!wt) return;
+  E.font = f.id; E.fw = wt.w; E.bold = !!wt.bold;
+  encNorm(); encTouch(); buildEnc(); closeFontSheet(); haptic();
+}
+/* ==== FONT LIB END ==== */
 function encTouch() { encDirty = true; renderEncDyn(); }
 /* همون قواعد ربات، اینجا فقط برای این‌که کاربر ترکیب ناسازگار انتخاب نکنه (ربات هم دوباره چک می‌کنه) */
 function encNorm() {
@@ -1051,7 +1159,7 @@ function buildEnc() {
   seg($('#e_alang'), [['first', 'اولین'], ['fa', 'فارسی'], ['en', 'انگلیسی'], ['ja', 'ژاپنی']], E.alang, v => set('alang', v));
   seg($('#e_sub'), [['none', 'بدون زیرنویس'], ['auto', 'داخلی (خودکار)'], ['ext', 'فایل خارجی']], E.sub, v => set('sub', v));
   seg($('#e_sublang'), [['fa', 'فارسی'], ['en', 'انگلیسی'], ['ar', 'عربی'], ['first', 'اولین']], E.sublang, v => set('sublang', v));
-  seg($('#e_font'), ENC_FONTS.map(f => [f, f]), E.font, v => set('font', v));
+  fontBtnRender();
   $('#e_size').value = E.size; $('#e_size').oninput = e => { E.size = +e.target.value; encDirty = true; renderEncDyn(); };
   $('#e_colors').innerHTML = ENC_COLORS.map(c => `<button class="swc ${c === E.color ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('');
   $$('#e_colors button').forEach(b => b.onclick = () => { $$('#e_colors button').forEach(x => x.classList.toggle('on', x === b)); haptic(); set('color', b.dataset.c); });
@@ -1060,7 +1168,8 @@ function buildEnc() {
   $('#e_bold').classList.toggle('on', !!E.bold);
   encBuilt = true; renderEncDyn();
 }
-$('#e_bold').onclick = e => { if (!E) return; E.bold = !E.bold; e.currentTarget.classList.toggle('on', E.bold); haptic(); encTouch(); };
+$('#e_bold').onclick = e => { if (!E) return; E.bold = !E.bold; E.fw = E.bold ? 700 : 400; e.currentTarget.classList.toggle('on', E.bold); haptic(); encTouch(); };
+$('#e_emb').onclick = e => { if (!E) return; E.emb = E.emb === false; e.currentTarget.classList.toggle('on', E.emb !== false); haptic(); encTouch(); };
 function renderEncDyn() {
   if (!E) return;
   const L = encL();
@@ -1077,6 +1186,9 @@ function renderEncDyn() {
   $('#e_gpu_hint').textContent = (E.tune !== 'none' || +E.pix === 10) ? 'با تیون یا ۱۰-بیتی، انکود روی CPU انجام می‌شه (GPU فقط تنظیمات ۸-بیت و بدون تیون رو داره).' : '';
   $('#e_subauto').style.display = E.sub === 'auto' ? '' : 'none';
   $('#e_subext').style.display = E.sub === 'ext' ? '' : 'none';
+  const hasAss = ((S && S.sess && S.sess.subs) || []).some(n => /\.(ass|ssa)$/i.test(n));
+  $('#e_embrow').style.display = (E.sub === 'ext' && hasAss) ? '' : 'none';
+  $('#e_emb').classList.toggle('on', E.emb !== false);
   $('#e_style').style.display = E.sub !== 'none' ? '' : 'none';
   $('#e_run').textContent = E.sub !== 'none' ? '🔤 هاردساب + انکود صف' : '🎞 انکود صف';
   const pr = encProblems();
@@ -1085,7 +1197,7 @@ function renderEncDyn() {
   const pv = $('#e_pv'), t = $('#e_pvt');
   pv.classList.toggle('top', E.pos === 'top');
   const px = Math.max(8, E.size * 150 / 288 * 1.15);
-  t.style.cssText = `font-family:'${E.font}',Vazirmatn,sans-serif;font-size:${px}px;color:${E.color};font-weight:${E.bold ? 700 : 400};` +
+  t.style.cssText = `font-family:'${encFontCss(E.font, E.bold ? 700 : 400)}',Vazirmatn,sans-serif;font-size:${px}px;color:${E.color};font-weight:${E.bold ? 700 : 400};` +
     `-webkit-text-stroke:${E.outline * 2}px #000;paint-order:stroke fill;`;
 }
 function renderEnc() {
@@ -1557,5 +1669,20 @@ apply(); renderOwn(); cloudRestore();
 })();
 
 </script>
+<div id="fsheet" class="fsheet" hidden>
+  <div class="fsback" id="fsback"></div>
+  <div class="fspan">
+    <div class="row"><b class="grow">📚 کتابخانه‌ی فونت</b><button class="sm" id="fsx" type="button">بستن</button></div>
+    <input type="text" id="fsq" placeholder="جست‌وجوی نام فونت…" style="margin:10px 0">
+    <div id="fslist"></div>
+    <div id="fsdet" style="display:none">
+      <div class="seg" id="fsw" style="margin-bottom:10px"></div>
+      <div class="pvbox" id="fpv"><span>سلام! این یک نمونه برای پیش‌نمایش فونت است. Subtitle Preview 123</span></div>
+      <div class="hint" id="fps"></div>
+      <div class="hint" id="fpnote"></div>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="grow" id="fpok" type="button">✅ انتخاب این فونت</button></div>
+  </div>
+</div>
 </body>
 </html>
