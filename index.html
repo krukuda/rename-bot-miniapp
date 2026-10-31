@@ -386,6 +386,7 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
           <div class="row wrap" style="margin-top:8px"><button class="grow" id="e_subwait">📎 منتظر فایل زیرنویس باش</button><button class="sm bad" id="e_subclr">🗑 پاک‌کردن</button></div>
           <div class="hint">بعد از زدن دکمه، فایل زیرنویس رو توی چت ربات بفرست. برای چند ویدیو، زیرنویس‌ها هم‌نام ویدیو باشن یا به همون ترتیب فرستاده بشن. فارسیِ Windows-1256 خودکار به UTF-8 تبدیل می‌شه.</div>
           <div class="sw" id="e_embrow" style="display:none"><span>استفاده از فونت‌های ضمیمه‌شده (Embedded Fonts)<br><small class="hint">فقط برای زیرنویس ASS/SSA؛ خاموش = فونت‌های داخل زیرنویس استخراج نمی‌شن</small></span><button class="tg" id="e_emb" type="button"></button></div>
+        <div class="sw" id="e_pubrow" style="display:none"><label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="e_pub" style="margin-top:4px"><span>انتشار دائمی فونت‌های ضمیمه‌ی این زیرنویس در کتابخانه‌ی عمومی<br><small class="hint">فقط اگه مالک این فونت‌ها هستی یا License‌شون انتشار مجدد رو مجاز می‌کنه. تأیید می‌کنم که این حق را دارم؛ می‌دونم بعد از انتشار، حذف کامل آن از تاریخچه‌ی GitHub ممکنه نباشه.</small></span></label></div>
         </div>
         <div id="e_style" style="display:none">
           <label class="fld">استایل زیرنویس <span class="hint">(برای زیرنویس ASS/SSA خودِ فایل حفظ می‌شه)</span></label>
@@ -980,7 +981,7 @@ $('#goMagnet').onclick = async () => {
 $('#pasteMagnet').onclick = async () => { try { $('#magnet').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
 /* ---------------- انکود / هاردساب ---------------- */
-const ENC_DEF = { codec: 'h264', crf: 23, preset: 'veryfast', res: 'orig', abit: 128, cont: 'mp4', sub: 'none', sublang: 'fa', alang: 'first', emb: true, font: 'Vazirmatn', size: 24, color: '#FFFFFF', outline: 2, pos: 'bottom', bold: false, fw: 400, rc: 'crf', vbit: 2500, fps: 'orig', pix: 8, tune: 'none', acodec: 'aac' };
+const ENC_DEF = { codec: 'h264', crf: 23, preset: 'veryfast', res: 'orig', abit: 128, cont: 'mp4', sub: 'none', sublang: 'fa', alang: 'first', emb: true, pubfonts: false, font: 'Vazirmatn', size: 24, color: '#FFFFFF', outline: 2, pos: 'bottom', bold: false, fw: 400, rc: 'crf', vbit: 2500, fps: 'orig', pix: 8, tune: 'none', acodec: 'aac' };
 const ENC_COLORS = ['#FFFFFF', '#FFEB3B', '#00E5FF', '#B2FF59', '#FF9800'];
 const ENC_CODEC_FA = { h264: 'H.264', h265: 'H.265', av1: 'AV1' };
 const ENC_CODEC_TXT = { h264: 'سازگارترین؛ تقریباً روی همه‌ی دستگاه‌ها پخش می‌شه.', h265: 'حجم حدود نصف H.264 با کیفیت مشابه؛ بعضی پخش‌کننده‌های قدیمی پخش نمی‌کنن.', av1: 'کم‌حجم‌ترین؛ انکود کندتره و پخش روی بعضی دستگاه‌ها هنوز محدوده.' };
@@ -1170,6 +1171,7 @@ function buildEnc() {
 }
 $('#e_bold').onclick = e => { if (!E) return; E.bold = !E.bold; E.fw = E.bold ? 700 : 400; e.currentTarget.classList.toggle('on', E.bold); haptic(); encTouch(); };
 $('#e_emb').onclick = e => { if (!E) return; E.emb = E.emb === false; e.currentTarget.classList.toggle('on', E.emb !== false); haptic(); encTouch(); };
+$('#e_pub').onchange = e => { if (!E) return; E.pubfonts = !!e.target.checked; encTouch(); };
 function renderEncDyn() {
   if (!E) return;
   const L = encL();
@@ -1188,6 +1190,10 @@ function renderEncDyn() {
   $('#e_subext').style.display = E.sub === 'ext' ? '' : 'none';
   const hasAss = ((S && S.sess && S.sess.subs) || []).some(n => /\.(ass|ssa)$/i.test(n));
   $('#e_embrow').style.display = (E.sub === 'ext' && hasAss) ? '' : 'none';
+const pubOk = E.sub === 'ext' && hasAss && E.emb !== false;
+if (!pubOk) E.pubfonts = false;
+$('#e_pubrow').style.display = pubOk ? '' : 'none';
+$('#e_pub').checked = !!E.pubfonts;
   $('#e_emb').classList.toggle('on', E.emb !== false);
   $('#e_style').style.display = E.sub !== 'none' ? '' : 'none';
   $('#e_run').textContent = E.sub !== 'none' ? '🔤 هاردساب + انکود صف' : '🎞 انکود صف';
