@@ -986,7 +986,35 @@ function fillEnc(force) {
 const FP = { loaded: {}, pending: {}, sel: null, w: 400, q: '', tok: 0, seq: 0, bound: false };
 const FONT_ERR = { nofile: 'این فونت روی سرور فایل قابل‌دانلود نداره؛ پیش‌نمایشش ممکن نیست', nourl: 'این فونت روی سرور فایل قابل‌دانلود نداره؛ پیش‌نمایشش ممکن نیست', http: 'دانلود فونت از GitHub ناموفق بود (شاید این شبکه فیلتره)', big: 'فایل فونت خیلی بزرگه', hash: 'هش فایل با کاتالوگ نمی‌خونه؛ استفاده نمی‌شه', nosubtle: 'مرورگر این قابلیت رو نداره', load: 'خطا در بارگذاری فایل فونت', net: 'دانلود فونت ممکن نشد (اینترنت یا فیلتر؟)' };
 const FW_NAME = { 100: 'Thin', 200: 'ExtraLight', 300: 'Light', 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold', 800: 'ExtraBold', 900: 'Black' };
-const fontList = () => (encL() && encL().fonts) || [];
+let FONT_CAT = null, FONT_CAT_P = null;  // فهرست فونت: مستقیم از index.json عمومی (نه از رله؛ فریم رله سقف کوچک داره)
+const fontList = () => FONT_CAT || [];
+function fontFromIdx(e, base) {
+  const fam = String((e && e.family) || '').trim(); if (!fam) return null;
+  const ws = Object.entries(e.weights || {}).map(([k, v]) => {
+    const w = +k; if (!(w >= 100 && w <= 900) || !v || !/^[0-9a-f]{64}$/.test(v.sha256 || '')) return null;
+    let u; try { u = new URL(v.path, base); } catch (_) { return null; }
+    if (u.protocol !== 'https:' || u.hostname !== 'raw.githubusercontent.com') return null;
+    return { w, url: u.href, sha: v.sha256, bold: !!v.bold };
+  }).filter(Boolean).sort((a, b) => a.w - b.w);
+  if (!ws.length) return null;
+  let lic = ''; try { if (e.license_path) lic = new URL(e.license_path, base).href; } catch (_) {}
+  return { id: fam, label: String(e.label || fam), langs: Array.isArray(e.langs) ? e.langs : [], license: String(e.license || ''),
+           lic_url: lic.startsWith('https://') ? lic : '', ver: String(e.version || ''), w: ws };
+}
+async function loadFontCatalog() {
+  if (FONT_CAT) return FONT_CAT;
+  if (FONT_CAT_P) return FONT_CAT_P;
+  const url = (encL() && encL().fcu) || '';
+  if (!url) throw new Error('nocat');
+  FONT_CAT_P = (async () => {
+    const r = await fetch(url, { cache: 'no-cache' });
+    if (!r.ok) throw new Error('nocat');
+    const j = await r.json();
+    FONT_CAT = (j.fonts || []).map(e => fontFromIdx(e, url)).filter(Boolean);
+    return FONT_CAT;
+  })().finally(() => { FONT_CAT_P = null; });
+  return FONT_CAT_P;
+}
 const fontById = id => fontList().find(f => f.id === id) || null;
 const fontWt = (f, w) => ((f && f.w) || []).find(x => x.w === w) || null;
 const fontNearest = (f, w) => {  // نزدیک‌ترین وزن موجود (همون منطق ربات)
@@ -998,6 +1026,7 @@ const fontErrMsg = e => FONT_ERR[e && e.message] || FONT_ERR.net;
 const fontWname = w => `${w} · ${FW_NAME[w] || ''}`.trim();
 function fontBtnRender() {
   const b = $('#e_fontbtn'); if (!b) return;
+  if (!FONT_CAT) loadFontCatalog().then(fontBtnRender, () => {});
   const f = fontById(E.font), w = E.fw || (E.bold ? 700 : 400);
   b.innerHTML = `<span>${esc(f ? f.label : E.font)}</span><small>${esc(fontWname(w))} ▾</small>`;
   b.onclick = openFontSheet;
@@ -1033,9 +1062,10 @@ function bindFontSheet() {
   $('#fpok').onclick = confirmFont;
   $('#fsq').oninput = e => { FP.q = e.target.value; renderFontSheet(); };
 }
-function openFontSheet() {
-  if (!fontList().length) { toast(rt('کاتالوگ فونت هنوز نرسیده؛ چند لحظه دیگه دوباره بزن', 'Font catalog not received yet; try again shortly')); return; }
+async function openFontSheet() {
   bindFontSheet();
+  try { await loadFontCatalog(); } catch (e) { toast(rt('کاتالوگ فونت در دسترس نیست؛ دوباره امتحان کن', 'Font catalog unavailable; try again')); return; }
+  if (!fontList().length) { toast(rt('کاتالوگ فونت هنوز نرسیده؛ چند لحظه دیگه دوباره بزن', 'Font catalog not received yet; try again shortly')); return; }
   FP.sel = E.font; FP.w = E.fw || (E.bold ? 700 : 400); FP.q = ''; $('#fsq').value = '';
   $('#fsheet').hidden = false;
   renderFontSheet();
