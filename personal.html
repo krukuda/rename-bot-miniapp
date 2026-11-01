@@ -237,6 +237,14 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
       <button class="pri" id="igGo" style="margin-top:8px;width:100%">⬇️ دانلود اینستاگرام</button>
     </div>
     <div class="card">
+      <h2>🎵 تیک‌تاک (ویدیو)</h2>
+      <div class="hint" style="margin-bottom:8px">لینک ویدیوی تیک‌تاک رو بچسبون و دانلود کن (لینک کوتاه vm / vt هم کار می‌کنه).</div>
+      <textarea id="ttUrls" class="mono" placeholder="هر خط یک لینک تیک‌تاک" rows="2"></textarea>
+      <div class="row" style="margin-top:8px"><span class="grow">کیفیت</span><select id="ttQ"><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option><option value="360">360p</option><option value="audio">🎵 فقط صدا</option></select></div>
+      <div class="row" style="margin-top:8px"><button class="sm" id="ttPaste">📋 چسباندن</button></div>
+      <button class="pri" id="ttGo" style="margin-top:8px;width:100%">⬇️ دانلود از تیک‌تاک</button>
+    </div>
+    <div class="card">
       <h2>𝕏 ایکس (ویدیوی پست)</h2>
       <div class="hint" style="margin-bottom:8px">لینک پست ویدیویی ایکس یا توییتر رو بچسبون و دانلود کن.</div>
       <textarea id="xUrls" class="mono" placeholder="هر خط یک لینک ایکس" rows="2"></textarea>
@@ -704,11 +712,12 @@ const IG_RE = /^https?:\/\/(?:[\w-]+\.)*instagram\.com(?:[\/?#:]|$)/i;
 const X_RE = /^https?:\/\/(?:[\w-]+\.)*(?:x\.com|twitter\.com)(?:[\/?#:]|$)/i;
 const RD_RE = /^https?:\/\/(?:[\w-]+\.)*(?:reddit\.com|redd\.it)(?:[\/?#:]|$)/i;
 const SC_RE = /^https?:\/\/(?:[\w-]+\.)*soundcloud\.com(?:[\/?#:]|$)/i;
+const TT_RE = /^https?:\/\/(?:[\w-]+\.)*tiktok\.com(?:[\/?#:]|$)/i;
 const YT_ALL_Q = [['2160', '2160p (4K)'], ['1440', '1440p (2K)'], ['1080', '1080p'], ['720', '720p'], ['480', '480p'], ['360', '360p']];
 const YT_Q_DEFAULT = $('#ytQ').innerHTML;
 function soSync() {
   const y = (S && S.yt) || null, info = $('#soInfo');
-  const btns = ['#ytCheck', '#ytGo', '#igGo', '#xGo', '#rdGo', '#scGo'].map(id => $(id));
+  const btns = ['#ytCheck', '#ytGo', '#igGo', '#ttGo', '#xGo', '#rdGo', '#scGo'].map(id => $(id));
   if (!y) { info.textContent = ''; btns.forEach(b => b.disabled = false); return; }
   btns.forEach(b => b.disabled = !y.on);
   const t = [];
@@ -718,6 +727,7 @@ function soSync() {
     if (y.ck === false) t.push('🍪 کوکی ندارم؛ یوتیوب معمولاً IP کولب رو بلاک می‌کنه. با /cookies توی ربات کوکی بده.');
     else if (y.ck === true) t.push('🍪 کوکی دارم.');
   }
+  if (y.cks) Object.entries(y.cks).forEach(([k, v]) => t.push(`🍪 ${k}: ${v.ok ? '✓' : '✗'} — فایل کوکی توی Drive (پوشه‌ی rename_bot): ${v.file}`));
   info.textContent = t.join('\n'); info.style.whiteSpace = 'pre-line';
 }
 function _soJob() {
@@ -766,7 +776,7 @@ $('#igGo').onclick = async () => {
 };
 $('#ytPaste').onclick = async () => { try { $('#ytUrls').value = (await navigator.clipboard.readText()) || ''; resetYt(); } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست', true); } };
 $('#igPaste').onclick = async () => { try { $('#igUrls').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست', true); } };
-[['x', 'xUrls', X_RE, 'xQ', 'ایکس'], ['rd', 'rdUrls', RD_RE, 'rdQ', 'ردیت'], ['sc', 'scUrls', SC_RE, null, 'ساندکلاود']].forEach(([src, box, re, qid, nm]) => {
+[['tt', 'ttUrls', TT_RE, 'ttQ', 'تیک‌تاک'], ['x', 'xUrls', X_RE, 'xQ', 'ایکس'], ['rd', 'rdUrls', RD_RE, 'rdQ', 'ردیت'], ['sc', 'scUrls', SC_RE, null, 'ساندکلاود']].forEach(([src, box, re, qid, nm]) => {
   $('#' + src + 'Go').onclick = async () => {
     const urls = soPick('#' + box, re);
     if (!urls.length) return toast('لینک ' + nm + ' بذار', true);
