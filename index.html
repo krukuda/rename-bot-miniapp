@@ -481,6 +481,7 @@ const ABLY_TOKEN = Q.get('a') || '', ABLY_EXP = Number(Q.get('x') || 0);
 const UP = `rnb${TID}u`, DN = `rnb${TID}d`;
 let LEGACY = null; try { LEGACY = JSON.parse(dec.decode(b64uToBytes(Q.get('s')))); } catch (e) {}
 let S = null, conn = 'connecting', lastRx = 0, nonce = 0, helloTries = 0;
+const PARTS = {};  // بخش‌های جدا (acct/q/links/tor) که با want گرفته شدن
 let relayState = 'init', postFail = false, authErr = '';
 // وقتی مینی‌اپ از «دکمه‌ی کیبورد» باز بشه، تلگرام طبق مستندات initData رو خالی می‌ده (فقط menu button / دکمه‌ی اینلاین / لینک مستقیم می‌دن)
 const INIT_EMPTY = !!(tg && tg.platform && tg.platform !== 'unknown' && !tg.initData);
@@ -550,7 +551,8 @@ function call(c, d, timeout = 25000, onLate = null) {
 }
 function onMsg(o) {
   lastRx = Date.now();
-  if (o.t === 'state') { S = o.d; authErr = ''; setConn('live'); helloTries = 0; renderAll(); refFromState(S.refj); }
+  if (o.t === 'state') { const first = !S; S = Object.assign({}, o.d, PARTS); authErr = ''; setConn('live'); helloTries = 0; renderAll(); refFromState(S.refj); if (first) wantPage(curPage()); }
+  else if (o.t === 'part') { Object.assign(PARTS, o.d); if (S) { Object.assign(S, o.d); setConn('live'); renderAll(); } }
   else if (o.t === 'err') { authErr = ERR_TEXT[o.code] || ERR_TEXT.bad; if (conn !== 'live') setConn('offline'); }
   else if (o.t === 'ack') { const p = pending.get(o.r); if (p) { clearTimeout(p.t); pending.delete(o.r);
     if (p.timedOut) { if (o.ok && p.onLate) p.onLate(o.d || {}); else if (!o.ok) toast(o.e || 'خطا', true); }
@@ -632,7 +634,11 @@ function go(p) {
   $$('.page').forEach(x => x.classList.toggle('on', x.id === 'p-' + p));
   $$('#nav button').forEach(x => x.classList.toggle('on', x.dataset.p === p));
   haptic(); window.scrollTo(0, 0);
+  wantPage(p);
 }
+const SEC_OF = { home: ['acct'], social: ['acct'], queue: ['q'], set: [], links: ['links'], tor: ['tor'], enc: ['q'], chat: ['acct'] };
+function curPage() { const p = document.querySelector('.page.on'); return p ? p.id.slice(2) : 'home'; }
+function wantPage(p) { send({ c: 'want', d: { s: SEC_OF[p] || [] }, r: 'w' + Date.now() }).catch(() => {}); }
 $$('#nav button').forEach(b => b.onclick = () => go(b.dataset.p));
 
 /* ---------------- خانه ---------------- */
