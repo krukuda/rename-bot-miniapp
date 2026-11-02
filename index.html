@@ -82,6 +82,11 @@ textarea{resize:vertical;min-height:84px}
 .b.me{align-self:flex-start;background:var(--ac);color:var(--act);border-end-start-radius:4px}
 .b.bot{align-self:flex-end;background:var(--soft);border-end-end-radius:4px}
 .b.err{background:color-mix(in srgb,var(--bad) 15%,transparent)}
+.b .btxt{white-space:pre-wrap;overflow-wrap:anywhere}
+.acts{display:flex;gap:4px;margin-top:4px;justify-content:flex-end}
+.ab{background:transparent;border:0;font-size:15px;line-height:1;padding:4px 7px;border-radius:9px;cursor:pointer;opacity:.6;color:inherit}
+.ab:active{background:var(--line)}
+.ab.on{opacity:1;background:color-mix(in srgb,var(--ac) 20%,transparent)}
 .b small{display:block;opacity:.6;font-size:11px;margin-top:3px}
 .nav{position:fixed;bottom:0;inset-inline:0;z-index:30;display:flex;justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line)}
 .nav button{background:transparent;color:var(--hint);display:flex;flex-direction:column;align-items:center;gap:0;font-size:11px;padding:4px 8px;min-height:50px;flex:1;position:relative}
@@ -608,7 +613,8 @@ function onMsg(o) {
   else if (o.t === 'ack') { const p = pending.get(o.r); if (p) { clearTimeout(p.t); pending.delete(o.r);
     if (p.timedOut) { if (o.ok && p.onLate) p.onLate(o.d || {}); else if (!o.ok) toast(o.e || 'خطا', true); }
     else o.ok ? p.res(o.d || {}) : p.rej(new Error(o.e || 'خطا')); } }
-  else if (o.t === 'chat') { bubble('bot', o.text, o.err, o.via); chatBusy(false); }
+  else if (o.t === 'chat') { bubble('bot', o.text, o.err, o.via, o.id); chatBusy(false); }
+  else if (o.t === 'chatsync') { chatNeedLoad = true; loadChatLog(); }
   else if (o.t === 'avatar') { window.__tl && window.__tl.avatar(o.d); }
   else if (o.t === 'pong') { if (conn !== 'live') setConn('live'); }
   else if (o.t === 'tok') { ablyTokenArrived(o.d || {}); }
@@ -928,10 +934,48 @@ $('#lAll').onclick = async () => { if (confirm('همه‌ی لینک‌ها حذ
 
 /* ---------------- چت ---------------- */
 let cBusy = false;
-function bubble(who, text, err, via) {
+let chatNeedLoad = true, chatLoading = false;
+function bubble(who, text, err, via, id, fb, src) {
   const d = document.createElement('div'); d.className = `b ${who}${err ? ' err' : ''}`;
-  d.textContent = text; if (via) { const s = document.createElement('small'); s.textContent = via; d.appendChild(s); }
+  if (id) d.dataset.id = id;
+  const body = document.createElement('div'); body.className = 'btxt'; body.textContent = text; d.appendChild(body);
+  const note = [src === 'tg' ? '📨 از تلگرام' : '', via || ''].filter(Boolean).join(' · ');
+  if (note) { const s = document.createElement('small'); s.textContent = note; d.appendChild(s); }
+  if (who === 'bot' && !err && id) d.appendChild(chatActs(id, text, fb));
   const log = $('#chatlog'); log.appendChild(d); log.scrollTop = log.scrollHeight;
+  return d;
+}
+function chatActs(id, text, fb) {
+  const row = document.createElement('div'); row.className = 'acts';
+  row.innerHTML = `<button type="button" class="ab" data-a="copy" title="کپی">📋</button><button type="button" class="ab ${fb === 'like' ? 'on' : ''}" data-a="like" title="پسندیدم">👍</button><button type="button" class="ab ${fb === 'dislike' ? 'on' : ''}" data-a="dislike" title="نپسندیدم">👎</button>`;
+  row.onclick = async e => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    if (b.dataset.a === 'copy') return copyText(text);
+    const r = await act('chat_fb', { id, v: b.dataset.a }, null);
+    if (!r || r.fb === undefined) return;
+    row.querySelectorAll('button[data-a=like],button[data-a=dislike]').forEach(x => x.classList.toggle('on', x.dataset.a === r.fb));
+  };
+  return row;
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); toast('کپی شد'); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (_) {}
+    ta.remove(); toast(ok ? 'کپی شد' : 'کپی نشد', !ok);
+  }
+}
+async function loadChatLog() {
+  if (chatLoading || cBusy) return;
+  chatLoading = true;
+  try {
+    const r = await act('chat_log', {}, null);
+    if (!r || !Array.isArray(r.msgs)) return;
+    chatNeedLoad = false;
+    const log = $('#chatlog'); log.innerHTML = '';
+    r.msgs.forEach(m => bubble(m.r === 'user' ? 'me' : 'bot', m.t, false, m.via, m.r === 'assistant' ? m.id : '', m.fb, m.src));
+  } finally { chatLoading = false; }
 }
 function chatBusy(v) { cBusy = v; $('#cSend').disabled = v; $('#cSend').textContent = v ? '…' : 'ارسال'; }
 async function sendChat() {
@@ -944,6 +988,7 @@ $('#cSend').onclick = sendChat; $('#cin').onkeydown = e => { if (e.key === 'Ente
 $('#cRst').onclick = async () => { if (await act('chat_reset', {}, 'حافظه‌ی گفتگو پاک شد')) $('#chatlog').innerHTML = ''; };
 $('#cTog').onclick = () => act('chat_toggle', {});
 function renderChat() {
+  if (chatNeedLoad && S) loadChatLog();
   const c = S && S.chat;
   $('#chatst').textContent = !c ? '' : !c.enabled ? 'چت هوشمند خاموشه (سلول ۵)' : (c.on ? 'چت پیام‌های متنی توی تلگرام: روشن' : 'چت پیام‌های متنی توی تلگرام: خاموش');
   $('#cTog').textContent = c && c.on ? '🔇 خاموش' : '🔈 روشن'; $('#cTog').style.display = c && c.enabled ? '' : 'none';
