@@ -454,6 +454,8 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
     </div>
     <div class="card" id="tkThread" style="display:none">
       <h2 id="tkTitle"></h2>
+      <div class="row" style="margin-bottom:8px"><input type="text" id="tkTitleIn" maxlength="80" placeholder="عنوان تیکت" style="flex:1"><button class="sm" id="tkTitleSave">ذخیره عنوان</button></div>
+      <div id="tkReqBox" style="display:none"></div>
       <div id="tkMsgs" class="tk-msgs"></div>
       <textarea id="tkText" rows="3" placeholder="پاسخ به کاربر…"></textarea>
       <div class="row" style="margin-top:8px"><button class="pri" id="tkSend" style="flex:1">📨 ارسال پاسخ</button><button class="sm bad" id="tkClose">بستن تیکت</button></div>
@@ -469,15 +471,15 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
   </section>
 </main>
 <nav class="nav" id="nav">
-  <button data-p="home" class="on"><span><img class="nico" src="icons/home.png?v=6ff862a1" alt=""></span>خانه</button>
-  <button data-p="social"><span><img class="nico" src="icons/social.png?v=6ff862a1" alt=""></span>سوشال</button>
-  <button data-p="queue"><span><img class="nico" src="icons/queue.png?v=6ff862a1" alt=""></span>صف<i class="n" id="qn_b" style="display:none"></i></button>
-  <button data-p="set"><span><img class="nico" src="icons/set.png?v=6ff862a1" alt=""></span>تنظیمات</button>
-  <button data-p="links"><span><img class="nico" src="icons/links.png?v=6ff862a1" alt=""></span>لینک‌ها</button>
-  <button data-p="tor"><span><img class="nico" src="icons/tor.png?v=6ff862a1" alt=""></span>تورنت<i class="n" id="tor_b" style="display:none"></i></button>
-  <button data-p="enc"><span><img class="nico" src="icons/enc.png?v=6ff862a1" alt=""></span>انکود</button>
-  <button data-p="chat"><span><img class="nico" src="icons/chat.png?v=6ff862a1" alt=""></span>چت</button>
-      <button data-p="support"><span>🆘</span>پشتیبانی</button>
+  <button data-p="home" class="on"><span><img class="nico" src="icons/home.png?v=1d895493" alt=""></span>خانه</button>
+  <button data-p="social"><span><img class="nico" src="icons/social.png?v=1d895493" alt=""></span>سوشال</button>
+  <button data-p="queue"><span><img class="nico" src="icons/queue.png?v=1d895493" alt=""></span>صف<i class="n" id="qn_b" style="display:none"></i></button>
+  <button data-p="set"><span><img class="nico" src="icons/set.png?v=1d895493" alt=""></span>تنظیمات</button>
+  <button data-p="links"><span><img class="nico" src="icons/links.png?v=1d895493" alt=""></span>لینک‌ها</button>
+  <button data-p="tor"><span><img class="nico" src="icons/tor.png?v=1d895493" alt=""></span>تورنت<i class="n" id="tor_b" style="display:none"></i></button>
+  <button data-p="enc"><span><img class="nico" src="icons/enc.png?v=1d895493" alt=""></span>انکود</button>
+  <button data-p="chat"><span><img class="nico" src="icons/chat.png?v=1d895493" alt=""></span>چت</button>
+      <button data-p="support"><span><img class="nico" src="icons/support.png?v=1d895493" alt=""></span>پشتیبانی</button>
 </nav>
 <div id="toast"></div>
 
@@ -1512,11 +1514,13 @@ function renderSupport() {
   const box = $('#tkList'); if (!box) return;
   const L = (S && S.tickets) || [];
   box.innerHTML = L.length ? L.map(t => `<div class="item" data-tk="${esc(t.id)}" style="cursor:pointer">
-      <div style="flex:1;min-width:0"><div class="nm">${t.st === 'open' ? '🟢' : '⚪'} ${esc(t.id)}${TK_ADM() ? ' — ' + esc(t.name || '') + ' <small>(' + esc(String(t.uid)) + ')</small>' : ''}</div>
+      <div style="flex:1;min-width:0"><div class="nm">${t.st === 'open' ? '🟢' : '⚪'} ${esc(t.title || t.id)} <small>${esc(t.id)}</small>${TK_ADM() ? ' — ' + esc(t.name || '') + ' <small>(' + esc(String(t.uid)) + ')</small>' : ''}</div>
       <div class="hint" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.lf === 'a' ? 'پشتیبانی: ' : ''}${esc(t.last)}</div></div>
       <small class="hint">${t.n} پیام</small></div>`).join('')
     : `<div class="empty">${TK_ADM() ? 'تیکتی نیست.' : 'هنوز تیکتی نداری.'}</div>`;
   $$('#tkList [data-tk]').forEach(el => el.onclick = () => tkOpen(el.dataset.tk));
+  const cb = $('#tkCredits');
+  if (cb) cb.innerHTML = (S && S.credits && S.credits.length) ? S.credits.map(c => `🎁 ${esc(c.label)}: <b>${c.n}</b>`).join(' • ') : 'اعتبار اضافه‌ای نداری.';
   if (TK_SEL) tkRenderThread();
 }
 async function tkOpen(id) {
@@ -1531,10 +1535,22 @@ function tkRenderThread() {
   if (!TK_SEL || !head) { th.style.display = 'none'; return; }
   th.style.display = '';
   const adm = TK_ADM(), full = TK_FULL[TK_SEL];
+  const KL = { chat: 'پیام هوش مصنوعی', search: 'جستجوی وب', yt: 'دانلود یوتیوب/سوشال', tor: 'تورنت', enc: 'انکود ویدیو' };
   $('#tkTitle').textContent = `${TK_SEL} · ${head.st === 'open' ? 'باز' : 'بسته'}`;
+  if ($('#tkTitleIn') && document.activeElement !== $('#tkTitleIn')) $('#tkTitleIn').value = head.title || '';
+  const rq = (full && full.req) || head.req, rb = $('#tkReqBox');
+  if (rb) {
+    if (rq) {
+      const st = { pending: '⏳ در انتظار بررسی', approved: '✅ تأیید و شارژ شد', rejected: '❌ رد شد' }[rq.s] || rq.s;
+      rb.style.display = '';
+      rb.innerHTML = `<div class="item" style="flex-direction:column;align-items:stretch"><div class="nm">🎁 درخواست: +${rq.n} ${esc(KL[rq.k] || rq.k)}</div><div class="hint">${st}</div>${adm && rq.s === 'pending' ? '<div class="row" style="margin-top:8px"><button class="pri" id="tkApprove" style="flex:1">✅ تأیید و شارژ</button><button class="sm bad" id="tkReject">❌ رد</button></div>' : ''}</div>`;
+      if ($('#tkApprove')) $('#tkApprove').onclick = () => tkDecide(true);
+      if ($('#tkReject')) $('#tkReject').onclick = () => tkDecide(false);
+    } else { rb.style.display = 'none'; rb.innerHTML = ''; }
+  }
   $('#tkMsgs').innerHTML = full ? full.msgs.map(m => {
-      const mine = adm ? m.f === 'a' : m.f === 'u';
-      const who = mine ? (adm ? 'پشتیبانی (شما)' : 'شما') : (adm ? 'کاربر' : 'پشتیبانی');
+      const mine = m.f === 's' ? false : (adm ? m.f === 'a' : m.f === 'u');
+      const who = m.f === 's' ? 'سیستم' : (mine ? (adm ? 'پشتیبانی (شما)' : 'شما') : (adm ? 'کاربر' : 'پشتیبانی'));
       return `<div class="tk-bub ${mine ? 'me' : 'them'}"><small>${who} · ${tkTime(m.ts)}</small><div>${esc(m.t)}</div></div>`;
     }).join('') : '<div class="empty">در حال بارگذاری…</div>';
   const open = head.st === 'open';
@@ -1543,10 +1559,20 @@ function tkRenderThread() {
   $('#tkClose').style.display = open ? '' : 'none';
   $('#tkMsgs').scrollTop = $('#tkMsgs').scrollHeight;
 }
+async function tkDecide(ok) {
+  if (!TK_SEL) return;
+  const r = await act('tk_decide', { id: TK_SEL, ok }, ok ? 'شارژ انجام شد' : 'درخواست رد شد');
+  if (r) await tkOpen(TK_SEL);
+}
 if ($('#tkSend')) $('#tkSend').onclick = async () => {
   const txt = ($('#tkText').value || '').trim(); if (!txt) return toast('متن خالیه', true);
   const r = await act('tk_reply', { id: TK_SEL, text: txt }, null);
   if (r) { $('#tkText').value = ''; await tkOpen(TK_SEL); }
+};
+if ($('#tkTitleSave')) $('#tkTitleSave').onclick = async () => {
+  const t = ($('#tkTitleIn').value || '').trim(); if (!t) return toast('عنوان خالی نمی‌شه', true);
+  const r = await act('tk_title', { id: TK_SEL, title: t }, 'عنوان ذخیره شد');
+  if (r) await tkOpen(TK_SEL);
 };
 if ($('#tkClose')) $('#tkClose').onclick = async () => {
   const r = await act('tk_close', { id: TK_SEL }, 'تیکت بسته شد');
@@ -1554,8 +1580,8 @@ if ($('#tkClose')) $('#tkClose').onclick = async () => {
 };
 if ($('#tkNewGo')) $('#tkNewGo').onclick = async () => {
   const txt = ($('#tkNew').value || '').trim(); if (!txt) return toast('متن تیکت رو بنویس', true);
-  const r = await act('tk_new', { text: txt }, 'تیکت ثبت شد');
-  if (r && r.id) { $('#tkNew').value = ''; await tkOpen(r.id); }
+  const r = await act('tk_new', { text: txt, title: ($('#tkNewTitle').value || '').trim() }, 'تیکت ثبت شد');
+  if (r && r.id) { $('#tkNew').value = ''; $('#tkNewTitle').value = ''; await tkOpen(r.id); }
 };
 function renderAll() {
   renderEncUrl(); soSync(); renderSupport();
