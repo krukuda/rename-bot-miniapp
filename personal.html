@@ -74,6 +74,10 @@ textarea{resize:vertical;min-height:84px}
 .item{display:flex;align-items:center;gap:10px;padding:9px 0}
 .item+.item{border-top:1px solid var(--line)}
 .tk-msgs{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;margin-bottom:8px}.tk-bub{max-width:84%;padding:8px 10px;border-radius:14px;background:var(--soft)}.tk-bub.me{align-self:flex-end;background:color-mix(in srgb,var(--lnk) 22%,transparent)}.tk-bub.them{align-self:flex-start}.tk-bub small{display:block;opacity:.7;font-size:11px;margin-bottom:2px}.tk-bub div{white-space:pre-wrap;word-break:break-word}
+.faq details{border-bottom:1px solid var(--line);padding:8px 2px}
+.faq summary{cursor:pointer;font-weight:600;line-height:1.6}
+.faq .fa{margin-top:6px;white-space:pre-wrap;font-size:14px;line-height:1.8}
+.faq h4{margin:12px 0 4px;font-size:13px;color:var(--ac)}
 .item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:start;unicode-bidi:plaintext}
 .item .sub{font-size:12px;color:var(--hint)}
 .empty{text-align:center;color:var(--hint);padding:18px 6px;font-size:14px}
@@ -239,6 +243,7 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
       <div class="hint" style="margin-bottom:8px">لینک‌ها رو بچسبون، «🔍 بررسی کیفیت» رو بزن تا کیفیت‌هایی که همین ویدیو داره نشون داده بشه، بعد دانلود کن. ۴K و ۲K فقط وقتی هست که یوتیوب خودش داشته باشه.</div>
       <textarea id="ytUrls" class="mono" placeholder="هر خط یک لینک یوتیوب" rows="3"></textarea>
       <div class="row" style="margin-top:8px"><span class="grow">کیفیت</span><select id="ytQ"><option value="2160">2160p (4K)</option><option value="1440">1440p (2K)</option><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option><option value="360">360p</option><option value="audio">🎵 فقط صدا (MP3)</option></select></div>
+      <div class="row" id="ytDstRow" style="margin-top:8px;display:none"><span class="grow">مقصد</span><select id="ytDst"><option value="tg">📨 تلگرام</option><option value="drive">☁️ Google Drive</option></select></div>
       <div class="hint" id="ytInfo" style="margin-top:6px"></div>
       <div class="row" style="margin-top:8px"><button class="sm" id="ytCheck">🔍 بررسی کیفیت</button><button class="sm" id="ytPaste">📋 چسباندن</button></div>
       <button class="pri" id="ytGo" style="margin-top:8px;width:100%">⬇️ دانلود یوتیوب</button>
@@ -350,6 +355,7 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
       <div id="tornote" class="hint" style="display:none;font-size:14px"></div>
       <div id="torctl">
         <textarea id="magnet" class="mono" placeholder="magnet:?xt=urn:btih:…" rows="2"></textarea>
+        <div class="row" id="magDstRow" style="margin-top:8px;display:none"><span class="grow">مقصد</span><select id="magDst"><option value="tg">📨 تلگرام</option><option value="drive">☁️ Google Drive</option></select></div>
         <label class="row" id="magEncRow" style="margin-top:8px;gap:8px;cursor:pointer;display:none"><input type="checkbox" id="magEnc"><span>🎞 انکود بعد از دانلود</span></label>
         <div class="row" style="margin-top:8px"><button class="pri grow" id="goMagnet">افزودن تورنت</button><button id="pasteMagnet">📋 چسباندن</button></div>
       </div>
@@ -459,6 +465,7 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
   <!-- ============ چت ============ -->
   <!-- ============ پشتیبانی (کاربر): تیکت‌های خودش ============ -->
   <section id="p-support" class="page">
+    <div class="card"><h2>❓ سؤالات متداول</h2><input type="text" id="faqQ" placeholder="جستجو در سؤالات…" style="margin-bottom:6px"><div id="faqList" class="faq"></div></div>
     <div class="card">
       <h2>🆘 پشتیبانی</h2>
       <div class="hint" style="margin-bottom:8px">مشکل یا سؤالت رو بنویس؛ پشتیبانی همین‌جا جواب می‌ده. تا ۳ تیکت باز همزمان می‌تونی داشته باشی.</div>
@@ -805,7 +812,7 @@ $('#ytCheck').onclick = async () => {
 $('#ytGo').onclick = async () => {
   const urls = soPick('#ytUrls', YT_RE);
   if (!urls.length) return toast('لینک یوتیوب بذار', true);
-  const r = await act('get_url', { urls, enc: false, q: $('#ytQ').value, src: 'yt' }, null);
+  const r = await act('get_url', { urls, enc: false, q: $('#ytQ').value, src: 'yt', dest: $('#ytDst').value }, null);
   if (r) { toast(`${r.n || urls.length} لینک در صف دانلود قرار گرفت`); $('#ytUrls').value = ''; resetYt(); }
 };
 $('#igGo').onclick = async () => {
@@ -1027,6 +1034,7 @@ async function torLoad(k) {
   } finally { torLoading[k] = false; renderTor(); }
 }
 function renderTor() {
+  renderDriveOpts();
   const T = S && S.tor, on = !!(T && T.on);
   const nb = $('#tor_b'), live = on ? (S.tors || []).filter(t => t.stage !== 'done' && t.stage !== 'err').length : 0;
   nb.style.display = live ? '' : 'none'; nb.textContent = live;
@@ -1040,7 +1048,9 @@ function renderTor() {
   $('#torhint').textContent = [T.cap ? `سقف حجم کل: ${T.cap} مگابایت` : '', T.cap_n ? `${T.left} از ${T.cap_n} تورنت امروز باقی‌مانده` : ''].filter(Boolean).join(' • ');
   const cap = torCap();
   const capRow = `<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px"><span class="sub">تعداد فایل‌های نمایشی:</span>${TOR_CAPS.map(n => `<button class="sm${n === cap ? ' pri' : ''}" onclick="torCapSet(${n})">${n}</button>`).join('')}<input type="number" id="torCapIn" min="10" max="200" step="5" value="${cap}" style="width:72px"><button class="sm" onclick="torCapSet(document.getElementById('torCapIn').value)">ذخیره</button></div>`;
-  $('#tors').innerHTML = capRow + (S.tors || []).map(t => {
+  const vm = (S.tor && S.tor.video) || '';
+  const vidRow = `<div class="row" style="gap:6px;margin-bottom:8px"><span class="sub">ویدیوهای تورنت:</span><select onchange="torVideoSet(this.value)"><option value="" ${!vm ? 'selected' : ''}>پیش‌فرض (مطابق تنظیمات)</option><option value="video" ${vm === 'video' ? 'selected' : ''}>🎬 ویدئو تلگرام</option><option value="document" ${vm === 'document' ? 'selected' : ''}>📄 داکیومنت</option></select></div>`;
+  $('#tors').innerHTML = capRow + vidRow + (S.tors || []).map(t => {
     if (t.stage === 'select' && !torSel[t.k]) torSel[t.k] = new Set(torFiles(t).map(f => f.id));
     const live = t.stage !== 'done' && t.stage !== 'err';
     let body = `<div class="hint">${esc(TSTAGE[t.stage] || t.stage)}${t.stage === 'dl' ? ` — ${t.pct}%${t.spd ? ' • ' + fmtSize(t.spd) + '/s' : ''} • 🌱 ${t.seeders}` : ''}${t.stage === 'fetch' ? ` (${t.done}/${t.total})` : ''}${t.err ? ' — ' + esc(t.err) : ''}</div>`;
@@ -1057,7 +1067,10 @@ function renderTor() {
         body += `<div class="hint">نمایش ${shown.length} از ${total} فایل — برای دیدن بیشتر سقف نمایش رو بالا ببر.</div>`;
       }
       if (S.enc && S.enc.on) body += `<label class="row" style="margin-top:8px;gap:8px;cursor:pointer"><input type="checkbox" ${(t.k in torEnc ? torEnc[t.k] : t.enc) ? 'checked' : ''} onchange="torEncSet('${esc(t.k)}', this.checked)"><span>🎞 انکود بعد از دانلود</span></label>`;
-      body += `<div class="row" style="margin-top:8px"><button class="pri grow" onclick="torGo('${esc(t.k)}')">▶️ شروع (${fmtSize(torTotal(t))})</button><button onclick="torAll('${esc(t.k)}')">🔘 همه/هیچ</button></div>`;
+      const dst = torDst[t.k] || t.dest || 'tg', dCap = (S.drive && S.drive.cap_gb) || 10, over = dst === 'drive' && torTotal(t) > dCap * 1073741824;
+      if (S.drive && S.drive.ok) body += `<div class="row" style="margin-top:8px"><span class="grow">مقصد</span><select onchange="torDstSet('${esc(t.k)}', this.value)"><option value="tg" ${dst === 'tg' ? 'selected' : ''}>📨 تلگرام</option><option value="drive" ${dst === 'drive' ? 'selected' : ''}>☁️ Google Drive (حداکثر ${dCap} گیگ)</option></select></div>`;
+      if (over) body += `<div class="hint" style="color:var(--bad)">حجم انتخاب‌شده از سقف Drive (${dCap} گیگ) بیشتره؛ فایل کمتری انتخاب کن.</div>`;
+      body += `<div class="row" style="margin-top:8px"><button class="pri grow" ${over ? 'disabled' : ''} onclick="torGo('${esc(t.k)}')">▶️ شروع (${fmtSize(torTotal(t))})</button><button onclick="torAll('${esc(t.k)}')">🔘 همه/هیچ</button></div>`;
     }
     if (live) body += `<div class="row" style="margin-top:8px"><button class="sm bad" onclick="torCancel('${esc(t.k)}')">❌ لغو</button></div>`;
     else body += `<div class="row" style="margin-top:8px"><button class="sm" onclick="torDismiss('${esc(t.k)}')">🗑 حذف از فهرست</button></div>`;
@@ -1068,9 +1081,17 @@ function renderTor() {
     cb.checked ? s.add(+cb.dataset.id) : s.delete(+cb.dataset.id); renderTor();
   });
 }
+function renderDriveOpts() {
+  const ok = !!(S && S.drive && S.drive.ok);
+  ['#ytDstRow', '#magDstRow'].forEach(sel => { const r = $(sel); if (r) r.style.display = ok ? '' : 'none'; });
+  const yo = $('#ytDst option[value=drive]'); if (yo) yo.textContent = '☁️ Google Drive (بدون سقف حجم)';
+  const mo = $('#magDst option[value=drive]'); if (mo && S && S.drive) mo.textContent = `☁️ Google Drive (حداکثر ${S.drive.cap_gb} گیگ)`;
+}
+const torDst = {};
+window.torDstSet = (k, v) => { torDst[k] = v; renderTor(); };
 const torEnc = {};
 window.torEncSet = (k, v) => { torEnc[k] = v; };
-window.torGo = async k => { const ids = [...(torSel[k] || [])]; if (!ids.length) return toast('حداقل یک فایل انتخاب کن', true); const t = ((S && S.tors) || []).find(x => x.k === k) || {}; await act('tor_go', { k, ids, enc: k in torEnc ? !!torEnc[k] : !!t.enc }, 'شروع شد'); };
+window.torGo = async k => { const ids = [...(torSel[k] || [])]; if (!ids.length) return toast('حداقل یک فایل انتخاب کن', true); const t = ((S && S.tors) || []).find(x => x.k === k) || {}; await act('tor_go', { k, ids, dest: torDst[k] || t.dest || 'tg', enc: k in torEnc ? !!torEnc[k] : !!t.enc }, 'شروع شد'); };
 window.torCancel = async k => { if (confirm('این تورنت لغو بشه؟')) await act('tor_cancel', { k }, 'لغو شد'); };
 window.torDismiss = async k => { await act('tor_dismiss', { k }, 'از فهرست حذف شد'); };
 window.torMore = k => { torFailAt[k] = 0; torLoad(k); };
@@ -1081,11 +1102,12 @@ window.torCapSet = async v => {
   renderTor();
   await act('tor_cap', { n }, 'سقف نمایش ذخیره شد');
 };
+window.torVideoSet = async v => { if (S && S.tor) S.tor.video = v; renderTor(); await act('tor_video', { v }, 'ذخیره شد'); };
 window.torAll = k => { const t = ((S && S.tors) || []).find(x => x.k === k); if (!t) return; const all = torFiles(t), s = torSel[k]; torSel[k] = (s && s.size === all.length) ? new Set() : new Set(all.map(f => f.id)); renderTor(); };
 $('#goMagnet').onclick = async () => {
   const magnet = $('#magnet').value.trim();
   if (!/^magnet:\?/i.test(magnet)) return toast('لینک مگنت معتبر نیست (باید با magnet:? شروع بشه)', true);
-  if (await act('tor_add', { magnet, enc: !!$('#magEnc').checked }, 'تورنت اضافه شد')) $('#magnet').value = '';
+  if (await act('tor_add', { magnet, enc: !!$('#magEnc').checked, dest: $('#magDst').value }, 'تورنت اضافه شد')) $('#magnet').value = '';
 };
 $('#pasteMagnet').onclick = async () => { try { $('#magnet').value = (await navigator.clipboard.readText()) || ''; } catch (e) { toast('اجازه‌ی کلیپ‌بورد نیست؛ دستی بچسبون', true); } };
 
@@ -1548,7 +1570,26 @@ function renderEncUrl() {
 let TK_SEL = null; const TK_FULL = {};
 const TK_ADM = () => !!(S && S.me && S.me.admin);
 function tkTime(ts) { return ts ? new Date(ts * 1000).toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' }) : ''; }
+const FAQ = [{"g": "شروع", "r": "all", "q": "Téleios چیست؟", "a": "ربات دانلود فایل از لینک مستقیم، Google Drive، یوتیوب و چند سایت دیگر، تورنت و مگنت، تغییر نام و تامبنیل فایل‌ها، انکود و هاردساب ویدیو و یک دستیار هوش مصنوعی است."}, {"g": "شروع", "r": "all", "q": "از کجا شروع کنم؟", "a": "/start را بزن تا راهنما بیاد. برای پنل کنترل /app را بزن یا از دکمه‌ی «🎛 پنل کنترل» استفاده کن."}, {"g": "شروع", "r": "all", "q": "پنل کنترل را چطور باز کنم؟", "a": "از دکمه‌ی «🎛 باز کردن پنل» یا دکمه‌ی منوی کنار فیلد پیام استفاده کن. اگر پنل از دکمه‌ی معمولی کیبورد باز شود، نمی‌تواند هویتت را تأیید کند و خطا می‌دهد."}, {"g": "شروع", "r": "all", "q": "دستورها کجا هستن؟", "a": "با زدن «/» در چت فهرست دستورها باز می‌شود. دکمه‌های پایین صفحه هم همان بخش‌ها را باز می‌کنند."}, {"g": "فایل‌ها", "r": "all", "q": "فایلم را چطور تغییر نام بدهم؟", "a": "هر فایل (سند، ویدیو یا آهنگ) را بفرست تا منوی تغییر نام، تامبنیل، کپشن و نوع ارسال بیاید. یا روی فایل ریپلای کن و /rename بزن."}, {"g": "فایل‌ها", "r": "all", "q": "الگوی نام چیست؟", "a": "با /pattern الگوی پیش‌فرض را می‌گذاری. متغیرها: {name} {ext} {n} {n:3} {date} {time} {size} {res} {filename}. مثال: /pattern {name} [{res}]{ext}"}, {"g": "فایل‌ها", "r": "all", "q": "تامبنیل و کپشن پیش‌فرض؟", "a": "فقط یک عکس بفرست تا تامبنیل پیش‌فرض شود. با /delthumb حذفش کن. کپشن پیش‌فرض را با /setcaption بگذار."}, {"g": "فایل‌ها", "r": "all", "q": "چند فایل را پشت‌سرهم بفرستم؟", "a": "/batch را بزن، فایل‌ها را پشت‌سرهم بفرست و با /done تمامش کن. با /cancel کار در انتظار لغو می‌شود."}, {"g": "فایل‌ها", "r": "all", "q": "فایل‌های بزرگ چطور ارسال می‌شوند؟", "a": "فایل بالای ۲ گیگابایت خودکار تکه‌تکه می‌شود. بخش‌های mkv را می‌توانی با MKVToolNix دوباره به هم بچسبانی."}, {"g": "دانلود و سایت‌ها", "r": "all", "q": "از لینک مستقیم یا Google Drive چطور دانلود کنم؟", "a": "لینک را در پیوی بفرست یا /get لینک بزن (یا /dl). در گروه باید حتماً /get بزنی یا روی پیامی که لینک دارد ریپلای کنی."}, {"g": "دانلود و سایت‌ها", "r": "all", "q": "کدام سایت‌ها پشتیبانی می‌شوند؟", "a": "یوتیوب، اینستاگرام، تیک‌تاک، X، ردیت و ساندکلاود. لینک را بفرست و کیفیت را انتخاب کن. بعضی سایت‌ها ممکن است کوکی بخواهند."}, {"g": "دانلود و سایت‌ها", "r": "all", "q": "چرا بعضی لینک‌ها کار نمی‌کنند؟", "a": "بعضی ویدیوها کوکی می‌خواهند؛ ادمین کوکی هر سایت را جداگانه ثبت می‌کند. اگر آن سایت برای حساب تو فعال نباشد یا سهمیه‌ات تمام شده باشد، ربات دلیلش را می‌گوید. ردیت گاهی به‌خاطر محدودیت IP از سمت خود سایت جواب نمی‌دهد و این از ربات نیست."}, {"g": "دانلود و سایت‌ها", "r": "all", "q": "مگنت و تورنت؟", "a": "فقط در پیوی. مگنت را بفرست یا /torrent بزن؛ فایل .torrent را با کپشن /torrent بفرست. هر دانلود سقف زمانی دارد (پیش‌فرض ۳ ساعت). اگر تورنت برای حساب تو فعال نباشد، ربات همین را می‌گوید."}, {"g": "دانلود و سایت‌ها", "r": "all", "q": "سهمیه‌ی روزانه یعنی چه؟", "a": "کاربران عمومی برای دانلود، پیام هوش مصنوعی، جستجو و انکود سهمیه‌ی روزانه دارند. وقتی سهمیه تمام شود، می‌توانی از طریق درخواست اعتبار (بخش پشتیبانی) ادامه بدهی. سهمیه هر روز تازه می‌شود."}, {"g": "انکود و ویدیو", "r": "all", "q": "انکود و هاردساب چطور؟", "a": "روی ویدیو ریپلای کن و /enc بزن، یا از دکمه‌ی «🎞 انکود» زیر منوی ویدیو استفاده کن. برای هاردساب، فایل زیرنویس (ass یا srt) را در چت بفرست، بعد ویدیو را انکود کن و زیرنویس را انتخاب کن. /enc auto یعنی انکود خودکار."}, {"g": "انکود و ویدیو", "r": "all", "q": "شیت فریم‌ها چیست؟", "a": "چند فریم تصادفی از ویدیو همراه مشخصات فایل (کدک، رزولوشن، بیت‌ریت، صدا و زیرنویس) در یک تصویر. دکمه‌اش زیر منوی ویدیو است."}, {"g": "انکود و ویدیو", "r": "all", "q": "تحلیل ریلیز و پروفایل انکود؟", "a": "فقط در پیوی: /ref یا /analyze را بزن و یک ریلیز تمام‌شده یا لینک مستقیم بفرست. ربات تحلیلش می‌کند و می‌توانی پروفایل انکود بسازی. سقف حجم ۵ گیگابایت است. پروفایل‌هایت را با /refprofiles ببین."}, {"g": "Google Drive", "r": "all", "q": "لینک Drive بسازم؟", "a": "زیر منوی فایل «🔗 ساخت لینک (Drive)» را بزن. فایل روی یکی از اکانت‌های وصل‌شده آپلود و لینک دانلود ساخته می‌شود. لینک‌ها را با /links ببین و حذف کن. لینک‌ها بعد از مدتی یا با توقف ربات پاک می‌شوند."}, {"g": "Google Drive", "r": "all", "q": "اکانت Drive را چطور وصل کنم؟", "a": "/connect را در پیوی بزن (فقط برای کاربران مجاز). فهرست اکانت‌ها با /accounts است. اگر این قابلیت برای تو فعال نباشد، ربات همین را می‌گوید."}, {"g": "هوش مصنوعی", "r": "all", "q": "چت هوش مصنوعی چطور کار می‌کند؟", "a": "در پیوی هر متنی بفرستی جواب می‌دهم. با /chat روشن یا خاموش می‌شود. /ask سؤال هم حتی وقتی چت خاموش است جواب می‌دهد. سرچ وب: بنویس «سرچ کن عبارت»."}, {"g": "هوش مصنوعی", "r": "all", "q": "گفتگو حافظه دارد؟", "a": "چند پیام آخر گفتگو را برای ادامه‌ی بحث می‌بینم، نه کل گفتگو را. گفتگو روی سرور ذخیره می‌شود و با /reset یا دکمه‌ی 🧹 در پنل پاک می‌شود."}, {"g": "هوش مصنوعی", "r": "all", "q": "در گروه چطور جواب می‌دهی؟", "a": "فقط وقتی جواب می‌دهم که به پیام من ریپلای شده باشد یا منشن شده باشم."}, {"g": "هوش مصنوعی", "r": "all", "q": "چرا جواب نمی‌دهد؟", "a": "یکی از این‌هاست: چت روشن نیست، هیچ منبع هوش مصنوعی وصل نیست، سهمیه‌ی روزانه تمام شده، یا الان شلوغ است (⏳ چند ثانیه صبر کن). پیام بیشتر از ۸۰۰ کاراکتر بریده می‌شود."}, {"g": "هوش مصنوعی", "r": "all", "q": "کپی، لایک و دیسلایک؟", "a": "فقط در مینی‌اپ: زیر هر جواب هوش مصنوعی سه دکمه هست: کپی، پسندیدم و نپسندیدم. بازخوردت روی همان پیام ذخیره می‌شود."}, {"g": "اعتبار و پشتیبانی", "r": "all", "q": "اعتبار اضافه چیست؟", "a": "وقتی سهمیه‌ی روزانه‌ات تمام شود، می‌توانی اعتبار اضافه درخواست بدهی. هر نوع (پیام هوش مصنوعی، جستجو، یوتیوب، تورنت، انکود) جداست."}, {"g": "اعتبار و پشتیبانی", "r": "all", "q": "درخواست اعتبار را چطور بدهم؟", "a": "در بخش پشتیبانی نوع و تعداد (۱ تا ۳۰۰) را انتخاب کن، دلیلت را بنویس و بفرست. یا در پیوی بزن: /request نوع تعداد | دلیل. فقط یک درخواست در انتظار می‌توانی داشته باشی."}, {"g": "اعتبار و پشتیبانی", "r": "all", "q": "درخواستم کی بررسی می‌شود؟", "a": "ادمین بررسی می‌کند و نتیجه همین‌جا برایت می‌آید. زمان مشخصی نداریم؛ وضعیت را در بخش پشتیبانی ببین."}, {"g": "اعتبار و پشتیبانی", "r": "all", "q": "تیکت پشتیبانی چطور؟", "a": "از بخش پشتیبانی یا با /ticket عنوان | متن. حداکثر ۳ تیکت باز همزمان داری. پاسخ‌ها داخل همان تیکت می‌آیند و می‌توانی تیکت را ببندی."}, {"g": "حریم خصوصی", "r": "all", "q": "اطلاعات من کجا نگه‌داری می‌شود؟", "a": "تنظیمات، صف، لینک‌ها، گفتگو و تیکت‌هایت روی سرور ربات نگه‌داری می‌شوند. داده‌ی کاربران دیگر برایت قابل‌دیدن نیست. گفتگو را با /reset و لینک‌ها را با /links پاک کن."}, {"g": "حریم خصوصی", "r": "all", "q": "تنظیمات و سقف‌هایم را کجا ببینم؟", "a": "تنظیمات دائمی با /settings و وضعیت و سقف‌های خودت با /me (در پیوی)."}, {"g": "ادمین", "r": "adm", "q": "کوکی سایت‌ها را چطور ثبت کنم؟", "a": "/cookies اسم_سایت را بزن و فایل کوکی همان سایت را بفرست. هر سایت جداگانه ثبت می‌شود و برای بقیه‌ی سایت‌ها استفاده نمی‌شود."}, {"g": "ادمین", "r": "adm", "q": "منبع و مدل هوش مصنوعی؟", "a": "/model نمایش منبع‌ها و مدل. /model next یعنی مدل محلی بعدی. /provider اولویت منبع را تعیین می‌کند."}, {"g": "ادمین", "r": "adm", "q": "عمومی‌کردن ربات و سقف‌ها؟", "a": "/public حالت عمومی، /publimits سقف‌های کاربران عمومی، /ban و /unban کاربر، /allowgroup دسترسی گروه."}, {"g": "ادمین", "r": "adm", "q": "تأیید یا رد اعتبار و تیکت‌ها؟", "a": "/approve T1 یا /reject T1 برای درخواست اعتبار. پاسخ تیکت: /reply T1 متن. فهرست تیکت‌های باز: /tickets. همه‌ی این‌ها دکمه‌ی متناظر هم در پنل دارند."}, {"g": "ادمین", "r": "adm", "q": "لاگ و گزارش اجرا؟", "a": "/runlog وضعیت و لاگ اجرا را نشان می‌دهد و /report گزارش هوشمند همین اجرا را می‌دهد."}];
+let faqKey = '';
+function renderFaq() {
+  const box = $('#faqList'); if (!box) return;
+  const adm = TK_ADM(), q = (($('#faqQ') && $('#faqQ').value) || '').trim().toLowerCase();
+  const key = (adm ? 'a' : 'u') + '|' + q;
+  if (key === faqKey) return;  // بدون بازسازی؛ وگرنه با هر پوش وضعیت، بازبودن سؤال‌ها بسته می‌شد
+  faqKey = key;
+  const items = FAQ.filter(x => (adm || x.r !== 'adm') && (!q || (x.q + ' ' + x.a).toLowerCase().includes(q)));
+  let html = '', last = '';
+  items.forEach(x => {
+    if (x.g !== last) { html += `<h4>${esc(x.g)}</h4>`; last = x.g; }
+    html += `<details><summary>${esc(x.q)}${x.r === 'adm' ? ' <small class="hint">(ادمین)</small>' : ''}</summary><div class="fa">${esc(x.a)}</div></details>`;
+  });
+  box.innerHTML = html || '<div class="empty">چیزی پیدا نشد.</div>';
+}
+if ($('#faqQ')) $('#faqQ').oninput = () => renderFaq();
+
 function renderSupport() {
+  renderFaq();
   const box = $('#tkList'); if (!box) return;
   const L = (S && S.tickets) || [];
   box.innerHTML = L.length ? L.map(t => `<div class="item" data-tk="${esc(t.id)}" style="cursor:pointer">
