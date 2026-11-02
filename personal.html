@@ -27,6 +27,8 @@
 @media (prefers-color-scheme:dark){:root{--bg:var(--tg-theme-bg-color,#0e1116);--card:var(--tg-theme-secondary-bg-color,#171b22);--tx:var(--tg-theme-text-color,#eef0f4)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--tx)}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:400;font-display:swap;src:url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/ttf/Vazirmatn-Regular.ttf') format('truetype'),url('https://github.com/rastikerdar/vazirmatn/raw/v33.003/fonts/ttf/Vazirmatn-Regular.ttf') format('truetype')}
+@font-face{font-family:'Vazirmatn';font-style:normal;font-weight:700;font-display:swap;src:url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/ttf/Vazirmatn-Bold.ttf') format('truetype'),url('https://github.com/rastikerdar/vazirmatn/raw/v33.003/fonts/ttf/Vazirmatn-Bold.ttf') format('truetype')}
 body{font:15px/1.55 Vazirmatn,system-ui,-apple-system,"Segoe UI",Tahoma,"Noto Naskh Arabic",sans-serif;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 16px;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .top h1{font-size:17px;margin:0;flex:1}
@@ -71,6 +73,7 @@ textarea{resize:vertical;min-height:84px}
 .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 60%,#8b5cf6));transition:width .6s}
 .item{display:flex;align-items:center;gap:10px;padding:9px 0}
 .item+.item{border-top:1px solid var(--line)}
+.tk-msgs{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;margin-bottom:8px}.tk-bub{max-width:84%;padding:8px 10px;border-radius:14px;background:var(--soft)}.tk-bub.me{align-self:flex-end;background:color-mix(in srgb,var(--lnk) 22%,transparent)}.tk-bub.them{align-self:flex-start}.tk-bub small{display:block;opacity:.7;font-size:11px;margin-bottom:2px}.tk-bub div{white-space:pre-wrap;word-break:break-word}
 .item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:start;unicode-bidi:plaintext}
 .item .sub{font-size:12px;color:var(--hint)}
 .empty{text-align:center;color:var(--hint);padding:18px 6px;font-size:14px}
@@ -442,6 +445,22 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
   </section>
 
   <!-- ============ چت ============ -->
+  <!-- ============ پشتیبانی (کاربر): تیکت‌های خودش ============ -->
+  <section id="p-support" class="page">
+    <div class="card">
+      <h2>🆘 پشتیبانی</h2>
+      <div class="hint" style="margin-bottom:8px">مشکل یا سؤالت رو بنویس؛ پشتیبانی همین‌جا جواب می‌ده. تا ۳ تیکت باز همزمان می‌تونی داشته باشی.</div>
+      <textarea id="tkNew" rows="3" placeholder="مشکل یا سؤالت…"></textarea>
+      <button class="pri" id="tkNewGo" style="margin-top:8px;width:100%">📨 ثبت تیکت جدید</button>
+    </div>
+    <div class="card"><h2>📋 تیکت‌های من</h2><div id="tkList"></div></div>
+    <div class="card" id="tkThread" style="display:none">
+      <h2 id="tkTitle"></h2>
+      <div id="tkMsgs" class="tk-msgs"></div>
+      <textarea id="tkText" rows="2" placeholder="پیام تو…"></textarea>
+      <div class="row" style="margin-top:8px"><button class="pri" id="tkSend" style="flex:1">📨 ارسال</button><button class="sm bad" id="tkClose">بستن تیکت</button></div>
+    </div>
+  </section>
   <section id="p-chat" class="page">
     <div class="card">
       <div class="row"><span id="chatst" class="hint grow"></span><button class="sm" id="cTog"></button><button class="sm" id="cRst">🧹</button></div>
@@ -459,6 +478,7 @@ html.tl-glass .tl-hero{background:linear-gradient(135deg,color-mix(in srgb,var(-
   <button data-p="tor"><span><img class="nico" src="icons/tor.png?v=6ff862a1" alt=""></span>تورنت<i class="n" id="tor_b" style="display:none"></i></button>
   <button data-p="enc"><span><img class="nico" src="icons/enc.png?v=6ff862a1" alt=""></span>انکود</button>
   <button data-p="chat"><span><img class="nico" src="icons/chat.png?v=6ff862a1" alt=""></span>چت</button>
+      <button data-p="support"><span>🆘</span>پشتیبانی</button>
 </nav>
 <div id="toast"></div>
 
@@ -672,7 +692,7 @@ function go(p) {
   haptic(); window.scrollTo(0, 0);
   wantPage(p);
 }
-const SEC_OF = { home: ['acct'], social: ['acct'], queue: ['q'], set: [], links: ['links'], tor: ['tor'], enc: ['q'], chat: ['acct'] };
+const SEC_OF = { home: ['acct'], social: ['acct'], queue: ['q'], set: [], links: ['links'], tor: ['tor'], enc: ['q'], chat: ['acct'], support: ['tk'] };
 function curPage() { const p = document.querySelector('.page.on'); return p ? p.id.slice(2) : 'home'; }
 function wantPage(p) { send({ c: 'want', d: { s: SEC_OF[p] || [] }, r: 'w' + Date.now() }).catch(() => {}); }
 $$('#nav button').forEach(b => b.onclick = () => go(b.dataset.p));
@@ -1465,8 +1485,61 @@ function renderEncUrl() {
   b.onclick = async () => { const r = await act('enc_auto', { on: !E.auto }, E.auto ? 'انکود خودکار خاموش شد' : 'انکود خودکار روشن شد'); if (r && !E.auto) { $('#urlEnc').checked = true; $('#magEnc').checked = true; } else if (r) { $('#urlEnc').checked = false; $('#magEnc').checked = false; } };
 }
 
+/* ---------- پشتیبانی / تیکت (ادمین: همه‌ی تیکت‌ها و پاسخ؛ کاربر: تیکت‌های خودش) ---------- */
+let TK_SEL = null; const TK_FULL = {};
+const TK_ADM = () => !!(S && S.me && S.me.admin);
+function tkTime(ts) { return ts ? new Date(ts * 1000).toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' }) : ''; }
+function renderSupport() {
+  const box = $('#tkList'); if (!box) return;
+  const L = (S && S.tickets) || [];
+  box.innerHTML = L.length ? L.map(t => `<div class="item" data-tk="${esc(t.id)}" style="cursor:pointer">
+      <div style="flex:1;min-width:0"><div class="nm">${t.st === 'open' ? '🟢' : '⚪'} ${esc(t.id)}${TK_ADM() ? ' — ' + esc(t.name || '') + ' <small>(' + esc(String(t.uid)) + ')</small>' : ''}</div>
+      <div class="hint" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.lf === 'a' ? 'پشتیبانی: ' : ''}${esc(t.last)}</div></div>
+      <small class="hint">${t.n} پیام</small></div>`).join('')
+    : `<div class="empty">${TK_ADM() ? 'تیکتی نیست.' : 'هنوز تیکتی نداری.'}</div>`;
+  $$('#tkList [data-tk]').forEach(el => el.onclick = () => tkOpen(el.dataset.tk));
+  if (TK_SEL) tkRenderThread();
+}
+async function tkOpen(id) {
+  TK_SEL = id;
+  const r = await act('tk_get', { id }, null);
+  if (r && r.id) TK_FULL[id] = r;
+  tkRenderThread();
+}
+function tkRenderThread() {
+  const th = $('#tkThread'); if (!th) return;
+  const head = ((S && S.tickets) || []).find(x => x.id === TK_SEL);
+  if (!TK_SEL || !head) { th.style.display = 'none'; return; }
+  th.style.display = '';
+  const adm = TK_ADM(), full = TK_FULL[TK_SEL];
+  $('#tkTitle').textContent = `${TK_SEL} · ${head.st === 'open' ? 'باز' : 'بسته'}`;
+  $('#tkMsgs').innerHTML = full ? full.msgs.map(m => {
+      const mine = adm ? m.f === 'a' : m.f === 'u';
+      const who = mine ? (adm ? 'پشتیبانی (شما)' : 'شما') : (adm ? 'کاربر' : 'پشتیبانی');
+      return `<div class="tk-bub ${mine ? 'me' : 'them'}"><small>${who} · ${tkTime(m.ts)}</small><div>${esc(m.t)}</div></div>`;
+    }).join('') : '<div class="empty">در حال بارگذاری…</div>';
+  const open = head.st === 'open';
+  $('#tkText').disabled = !open; $('#tkSend').disabled = !open;
+  $('#tkText').placeholder = open ? (adm ? 'پاسخ به کاربر…' : 'پیام تو…') : 'این تیکت بسته شده';
+  $('#tkClose').style.display = open ? '' : 'none';
+  $('#tkMsgs').scrollTop = $('#tkMsgs').scrollHeight;
+}
+if ($('#tkSend')) $('#tkSend').onclick = async () => {
+  const txt = ($('#tkText').value || '').trim(); if (!txt) return toast('متن خالیه', true);
+  const r = await act('tk_reply', { id: TK_SEL, text: txt }, null);
+  if (r) { $('#tkText').value = ''; await tkOpen(TK_SEL); }
+};
+if ($('#tkClose')) $('#tkClose').onclick = async () => {
+  const r = await act('tk_close', { id: TK_SEL }, 'تیکت بسته شد');
+  if (r) await tkOpen(TK_SEL);
+};
+if ($('#tkNewGo')) $('#tkNewGo').onclick = async () => {
+  const txt = ($('#tkNew').value || '').trim(); if (!txt) return toast('متن تیکت رو بنویس', true);
+  const r = await act('tk_new', { text: txt }, 'تیکت ثبت شد');
+  if (r && r.id) { $('#tkNew').value = ''; await tkOpen(r.id); }
+};
 function renderAll() {
-  renderEncUrl(); soSync();
+  renderEncUrl(); soSync(); renderSupport();
   renderEnc(); renderTor(); renderHome(); renderQueue(); renderLinks(); renderChat(); renderNav(); fillSettings(false); renderSettingsExtra();
   window.__tl && window.__tl.refresh();
 }
